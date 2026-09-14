@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+/packages/
+*.user
+
+# Node
+node_modules/
+dist/
+.npm/
+
+# IDE
+.idea/
+.vs/
+riderModule.iml
+/_ReSharper.Caches/
+*.DotSettings.user
+
+# OS
+.DS_Store
+
+# Generated-model tooling leaves a crash log behind on a failed run.
+openapi-ts-error-*.log
+
+# Local reference checkouts (separate git repositories)
+dcd/
+streamline/
