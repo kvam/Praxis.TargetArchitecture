@@ -1,0 +1,2572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Starting fresh: how we work</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#222c3d;
+    --panel:#2d394f;
+    --panel-2:#35425a;
+    --accent:#7dd3fc;
+    --accent-2:#a78bfa;
+    --accent-3:#34d399;
+    --text:#e7edf5;
+    --muted:#aeb9cc;
+    --line:#46536d;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #2f4368 0%, transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, #3b2b5e 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family: "Inter","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+    overflow:hidden;
+  }
+  html{font-size:112.5%;}
+  .deck{
+    position:relative;
+    height:100vh;
+    width:100vw;
+  }
+  .slide{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    padding:6vh 9vw;
+    opacity:0;
+    transform:translateX(24px);
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  .slide.active{
+    display:flex;
+    opacity:1;
+    transform:translateX(0);
+  }
+  .kicker{
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    font-size:.75rem;
+    color:var(--accent);
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(2.2rem,4.6vw,3.6rem);
+    line-height:1.08;
+    margin:0 0 18px;
+    background:linear-gradient(90deg,var(--text),var(--accent) 60%,var(--accent-2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  h2{
+    font-size:clamp(1.5rem,2.6vw,2.1rem);
+    margin:0 0 28px;
+    color:var(--text);
+  }
+  .sub{
+    color:var(--muted);
+    font-size:1.15rem;
+    max-width:52ch;
+    margin:0 0 8px;
+  }
+  .grid{
+    display:grid;
+    gap:18px;
+    margin-top:8px;
+  }
+  .cols-2{grid-template-columns:1fr 1fr;}
+  .cols-3{grid-template-columns:repeat(3,1fr);}
+  .rules-grid{
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:10px;
+  }
+  .rules-grid .card{padding:12px 14px;}
+  .rules-grid .card h3{font-size:.92rem;margin:0 0 5px;}
+  .rules-grid .card p{font-size:.8rem;line-height:1.42;margin:0;}
+  .rules-grid .card code{font-size:.76rem;}
+  .grid.tight{gap:14px;}
+  .grid.tight .card{padding:15px 17px;}
+  .grid.tight .card h3{font-size:1rem;margin:0 0 6px;}
+  .grid.tight .card p{font-size:.9rem;line-height:1.45;}
+  .prin .card p + p{margin-top:9px;}
+  .prin .card p b{color:var(--text);}
+  .prin .card h3{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .prin .card h3 .n{
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.12em;
+    color:var(--muted);
+  }
+  .vsa{display:flex;flex-direction:column;gap:10px;margin-top:14px;width:fit-content;}
+  .vsa-row{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;}
+  /* The separator belongs to the diagram, not to the tier labels. Drawing it as
+     a grid item in column two keeps it the width of the widest row, rather than
+     of whichever band happens to sit beneath it. */
+  .vsa-row > .vsa-tier{grid-column:1;grid-row:1;}
+  .vsa-row > .vsa-tier + *{grid-column:2;grid-row:1;}
+  .vsa-row + .vsa-row{padding-top:10px;}
+  .vsa-row + .vsa-row::before{
+    content:"";
+    grid-column:2;
+    grid-row:1;
+    align-self:start;
+    margin-top:-10px;
+    border-top:1px dashed var(--line);
+  }
+  /* The band rows are shorter than their tier labels, so they gain slack the
+     slice row does not. Pay it back so every separator sits evenly. */
+  .vsa-row:first-child{padding-bottom:9px;}
+  .vsa-tier{text-align:right;}
+  .vsa-tier .tn{
+    font-size:.58rem;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+  }
+  .vsa-tier .tt{
+    font-size:.86rem;
+    font-weight:700;
+    color:var(--text);
+    margin-top:2px;
+  }
+  .vsa-tier .td{
+    font-size:.68rem;
+    color:var(--muted);
+    line-height:1.35;
+    margin-top:4px;
+  }
+  .vsa-slices{display:grid;grid-template-columns:repeat(7,minmax(0,150px));justify-content:start;gap:10px;}
+  .vsa-slice{
+    background:linear-gradient(180deg, rgba(167,139,250,0.20) 0%, rgba(167,139,250,0.07) 55%, rgba(167,139,250,0.04) 100%);
+    border:1px solid rgba(167,139,250,0.55);
+    border-radius:12px;
+    box-shadow:0 8px 22px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.07);
+    padding:8px 6px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    height:252px;
+  }
+  .vsa-chip{
+    font-size:.62rem;
+    font-weight:650;
+    text-align:center;
+    border-radius:7px;
+    padding:6px 6px;
+    line-height:1.25;
+  }
+  .vsa-chip.pres{background:rgba(125,211,252,0.17);color:#bfe7fd;border:1px solid rgba(125,211,252,0.42);}
+  .vsa-chip.biz{background:rgba(167,139,250,0.19);color:#d6c9ff;border:1px solid rgba(167,139,250,0.45);}
+  .vsa-chip.data{background:rgba(52,211,153,0.15);color:#a9ecd2;border:1px solid rgba(52,211,153,0.40);}
+  .vsa-name{
+    margin-top:auto;
+    align-self:center;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    font-weight:750;
+    font-size:.9rem;
+    letter-spacing:.03em;
+    color:#ffffff;
+    white-space:nowrap;
+    padding-bottom:2px;
+  }
+  .vsa-band{border-radius:12px;padding:8px;display:grid;gap:9px;width:fit-content;margin-inline:auto;}
+  .vsa-band.shared{grid-template-columns:repeat(3,minmax(0,250px));background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.26);}
+  .vsa-band.platform{grid-template-columns:repeat(4,minmax(0,250px));background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.26);}
+  .vsa-cell{
+    text-align:center;
+    padding:9px 6px;
+    border-radius:9px;
+    font-weight:650;
+    font-size:.84rem;
+  }
+  .vsa-band.shared .vsa-cell{background:rgba(249,115,22,0.12);color:#e0a679;}
+  .vsa-band.platform .vsa-cell{background:rgba(96,165,250,0.12);color:#9db8dd;}
+  .vsa-legend{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:20px;
+    /* Line up with the diagram content column: tier width plus the row gap. */
+    margin-left:166px;
+    font-size:.78rem;
+    color:var(--muted);
+  }
+  .vsa-legend > span{display:flex;align-items:center;gap:12px;}
+  .vsa-legend .vsa-chip{
+    min-width:112px;
+    flex:none;
+  }
+  .vsa-legend > span:last-child{margin-top:6px;}
+  .flow-node.reused{
+    border-color:rgba(52,211,153,0.6);
+    background:rgba(52,211,153,0.08);
+  }
+  .flow-node.reused .tag{color:var(--accent-3);}
+  .flow-node.write .tag{color:var(--accent-2);}
+  .flow-node.write{border-color:rgba(167,139,250,0.5);}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .card h3{
+    margin:0 0 8px;
+    font-size:1.05rem;
+    color:var(--accent);
+  }
+  .card p{
+    margin:0;
+    color:var(--muted);
+    font-size:.98rem;
+    line-height:1.5;
+  }
+  ul.points{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    gap:14px;
+  }
+  ul.points li{
+    padding-left:30px;
+    position:relative;
+    font-size:1.08rem;
+    line-height:1.5;
+    color:var(--text);
+  }
+  ul.points li b{color:var(--accent-2);}
+  ul.points li::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:.45em;
+    width:10px;
+    height:10px;
+    border-radius:3px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  }
+  table.rules{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.95rem;
+  }
+  table.rules th, table.rules td{
+    text-align:left;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  table.rules th{
+    color:var(--accent);
+    font-weight:600;
+    text-transform:uppercase;
+    font-size:.72rem;
+    letter-spacing:.08em;
+  }
+  table.rules td{color:var(--muted);}
+  table.rules td:first-child{color:var(--text);font-weight:500;}
+  code{
+    background:#2b3649;
+    border:1px solid var(--line);
+    padding:2px 7px;
+    border-radius:6px;
+    color:var(--accent-3);
+    font-size:.9em;
+  }
+  .tree{
+    background:#2b3649;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 22px;
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+    font-size:.92rem;
+    color:var(--muted);
+    line-height:1.65;
+    white-space:pre;
+  }
+  .tree .dir{color:var(--accent);}
+  .center{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    justify-content:center;
+    height:100%;
+  }
+  .footer{
+    position:absolute;
+    bottom:22px;
+    left:9vw;
+    right:9vw;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    font-size:.8rem;
+    color:var(--muted);
+  }
+  .progress{
+    position:absolute;
+    top:0; left:0; height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transition:width .3s ease;
+  }
+  .nav-hint{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  #pageno{
+    margin-right:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .nav-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    height:30px;
+    min-width:40px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--text);
+    border-radius:8px;
+    padding:0 10px;
+    font-size:1rem;
+    line-height:1;
+    cursor:pointer;
+    user-select:none;
+  }
+  .nav-btn:hover{
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .nav-btn:disabled{
+    opacity:.3;
+    cursor:default;
+    border-color:var(--line);
+    color:var(--text);
+  }
+  .big-quote{
+    font-size:clamp(1.6rem,3vw,2.4rem);
+    font-weight:600;
+    max-width:20ch;
+    line-height:1.3;
+  }
+  .highlight{color:var(--accent-2);}
+  .books{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-top:6px;
+  }
+  .book{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .book .title{
+    font-weight:700;
+    font-size:1.02rem;
+    color:var(--text);
+  }
+  .book .author{
+    font-size:.82rem;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:4px;
+  }
+  .book p{
+    margin:0;
+    color:var(--muted);
+    font-size:.9rem;
+    line-height:1.45;
+  }
+
+  /* Layered vs vertical-slice diagram */
+  .arch-compare{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:34px;
+    margin-top:10px;
+  }
+  .arch-box{
+    text-align:center;
+  }
+  .arch-box .label{
+    font-size:.85rem;
+    color:var(--muted);
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  .ftree{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+    background:var(--panel);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.78rem;
+    line-height:1.85;
+    text-align:left;
+    color:var(--muted);
+  }
+  .ftree .fdir{ color:var(--accent); }
+  .ftree .indent1{ padding-left:18px; }
+  .ftree .hit{
+    color:#fecaca;
+    background:rgba(239,68,68,.12);
+    border-left:3px solid #ef4444;
+    margin-left:-3px;
+    padding-left:15px;
+    border-radius:0 5px 5px 0;
+  }
+  .ftree .hit .tag{ color:#ef4444; font-size:.68rem; }
+  .ftree .group{
+    background:rgba(52,211,153,.1);
+    border:1px solid rgba(52,211,153,.35);
+    border-radius:8px;
+    padding:4px 8px;
+    margin:4px 0;
+  }
+  .ftree .group .fdir{ color:var(--accent-3); }
+  .ftree .group .gfile{ color:#bbf7d0; padding-left:18px; }
+  .ftree .group .gtag{ color:var(--accent-3); font-size:.68rem; }
+  .ftree .dim{ opacity:.45; }
+  .scoreline{
+    display:flex;
+    justify-content:center;
+    gap:26px;
+    margin-top:12px;
+    font-size:.78rem;
+    color:var(--muted);
+  }
+  .scoreline b{ color:var(--text); }
+  /* Ownership: who is allowed to make the change */
+  .tell{
+    margin-top:20px;
+    border:1px solid rgba(251,191,36,0.45);
+    border-radius:12px;
+    background:rgba(251,191,36,0.06);
+    padding:14px 18px;
+  }
+  .tell .tell-k{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#fbbf24;
+    margin-bottom:6px;
+  }
+  .tell p{
+    margin:0;
+    font-size:1rem;
+    line-height:1.5;
+    color:var(--text);
+  }
+  .pair-cost{
+    display:grid;
+    gap:8px;
+    margin-top:16px;
+  }
+  .pc-row{
+    display:grid;
+    grid-template-columns:300px 1fr 250px;
+    align-items:center;
+    gap:14px;
+  }
+  .pc-k{
+    font-size:.92rem;
+    color:var(--text);
+    text-align:right;
+  }
+  .pc-bar{
+    display:block;
+    height:22px;
+    border-radius:6px;
+    background:#222c3f;
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .pc-bar i{display:block;height:100%;}
+  .pc-v{
+    font-size:.86rem;
+    color:var(--muted);
+  }
+  .pair-when{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:22px;
+  }
+  .pw-panel{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 18px 16px;
+    background:#2b3649;
+  }
+  .pw-panel.yes{border-color:rgba(52,211,153,0.45);}
+  .pw-panel .pw-title{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .pw-panel.yes .pw-title{color:var(--accent-3);}
+  .pw-panel ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    gap:9px;
+  }
+  .pw-panel li{
+    font-size:.95rem;
+    line-height:1.45;
+    padding-left:22px;
+    position:relative;
+    color:var(--text);
+  }
+  .pw-panel li::before{
+    position:absolute;
+    left:0;
+    top:0;
+    color:var(--muted);
+  }
+  .pw-panel.yes li::before{content:"\2713";color:var(--accent-3);}
+  .pw-panel.no li::before{content:"\2014";}
+  .flow-row{
+    display:flex;
+    align-items:stretch;
+    justify-content:center;
+    gap:8px;
+    margin-top:14px;
+  }
+  .flow-node{
+    flex:1 1 0;
+    max-width:300px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--panel);
+    padding:16px 18px;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:5px;
+  }
+  .flow-node.source{border-color:rgba(125,211,252,0.55);}
+  .flow-node.derived{
+    border-style:dashed;
+    background:transparent;
+  }
+  .flow-node .t{
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--text);
+  }
+  .flow-node .s{
+    font-size:.8rem;
+    line-height:1.35;
+    color:var(--muted);
+  }
+  .flow-node .tag{
+    font-size:.64rem;
+    font-weight:700;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+  }
+  .flow-node.source .tag{color:var(--accent);}
+  .flow-node.derived .tag{color:var(--accent-3);}
+  .flow-arrow{
+    display:flex;
+    align-items:center;
+    color:var(--accent-2);
+    font-size:1.5rem;
+    padding:0 2px;
+  }
+  .decide-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:18px;
+  }
+  .decide-panel{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+    background:#2b3649;
+  }
+  .decide-panel.easy{border-color:rgba(52,211,153,0.45);}
+  .decide-panel.hard{border-color:rgba(239,68,68,0.45);}
+  .decide-panel .dp-title{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .decide-panel.easy .dp-title{color:var(--accent-3);}
+  .decide-panel.hard .dp-title{color:#ef4444;}
+  .dp-cost{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:10px 0 14px;
+  }
+  .dp-track{
+    flex:1;
+    height:10px;
+    border-radius:5px;
+    background:#2a344a;
+    overflow:hidden;
+  }
+  .dp-fill{display:block;height:100%;border-radius:5px;}
+  .decide-panel.easy .dp-fill{width:7%;background:var(--accent-3);}
+  .decide-panel.hard .dp-fill{width:100%;background:#ef4444;}
+  .dp-cost .dp-num{
+    font-family:monospace;
+    font-size:.85rem;
+    white-space:nowrap;
+  }
+  .decide-panel.easy .dp-num{color:var(--accent-3);}
+  .decide-panel.hard .dp-num{color:#ef4444;}
+  .dp-row{
+    display:grid;
+    grid-template-columns:104px 1fr;
+    gap:10px;
+    padding:7px 0;
+    border-top:1px solid var(--line);
+    font-size:.86rem;
+  }
+  .dp-row .dp-k{
+    color:var(--muted);
+    font-size:.74rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding-top:2px;
+  }
+  .dp-row .dp-v{color:var(--text);}
+  .own-compare{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-top:16px;
+  }
+  .own-panel{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    background:#2b3649;
+  }
+  .own-panel .own-title{
+    font-size:.75rem;
+    font-weight:700;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .own-people{
+    display:flex;
+    gap:6px;
+  }
+  .own-person{
+    flex:1;
+    text-align:center;
+    border-radius:8px;
+    padding:8px 2px 6px;
+    font-size:.62rem;
+    line-height:1.3;
+    border:1px solid var(--line);
+  }
+  .own-person .who{
+    display:block;
+    font-size:.78rem;
+    font-weight:700;
+    margin-bottom:2px;
+  }
+  .own-person.can{
+    background:rgba(52,211,153,.12);
+    border-color:rgba(52,211,153,.45);
+    color:var(--accent-3);
+  }
+  .own-person.cant{
+    background:rgba(239,68,68,.07);
+    border-color:rgba(239,68,68,.3);
+    color:#8b97ab;
+  }
+  .own-outcome{
+    margin-top:10px;
+    font-size:.72rem;
+    line-height:1.5;
+  }
+  .own-outcome.bad{ color:#fca5a5; }
+  .own-outcome.good{ color:var(--accent-3); }
+
+  /* Handoff calendar comparison */
+  .hchart{ margin-top:6px; }
+  .hrow{ margin-bottom:22px; }
+  .hlabel{
+    font-size:.85rem;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .hbar{
+    display:flex;
+    height:44px;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:#2b3649;
+  }
+  .seg{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:.68rem;
+    line-height:1.2;
+    padding:0 4px;
+    border-right:1px solid rgba(0,0,0,.35);
+  }
+  .seg:last-child{ border-right:none; }
+  .seg.work{
+    background:rgba(52,211,153,.85);
+    color:#06281c;
+    font-weight:700;
+  }
+  .seg.wait{
+    background:repeating-linear-gradient(135deg,rgba(239,68,68,.20),rgba(239,68,68,.20) 7px,rgba(239,68,68,.34) 7px,rgba(239,68,68,.34) 14px);
+    color:#fca5a5;
+    font-weight:600;
+  }
+  .seg.empty{ background:transparent; }
+  .seg.guess{
+    background:repeating-linear-gradient(135deg,rgba(251,191,36,.20),rgba(251,191,36,.20) 7px,rgba(251,191,36,.36) 7px,rgba(251,191,36,.36) 14px);
+    color:#fcd34d;
+    font-weight:600;
+  }
+  .seg.waste{
+    background:rgba(239,68,68,.85);
+    color:#2a0707;
+    font-weight:700;
+  }
+  .seg.task-a{ background:rgba(125,211,252,.9); color:#06202e; font-weight:700; }
+  .seg.task-b{ background:rgba(167,139,250,.9); color:#1b1136; font-weight:700; }
+  .seg.task-c{ background:rgba(52,211,153,.9); color:#06281c; font-weight:700; }
+  /* Saved time is not a task, so it gets its own colour */
+  .seg.saved{ background:rgba(251,191,36,.85); color:#2b1d00; font-weight:700; }
+  /* Room for the ship labels, which sit above the bar */
+  .hbar-wrap{ position:relative; margin-top:28px; }
+  .ship{
+    position:absolute;
+    top:-14px;
+    bottom:-4px;
+    border-left:2px dashed #fbbf24;
+    pointer-events:none;
+  }
+  .ship span{
+    position:absolute;
+    top:-4px;
+    left:5px;
+    font-size:.66rem;
+    font-weight:700;
+    color:#fbbf24;
+    white-space:nowrap;
+  }
+  .htotal{
+    font-size:.82rem;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .htotal b{ color:var(--text); }
+  .hlegend{
+    display:flex;
+    gap:22px;
+    justify-content:center;
+    font-size:.75rem;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .hlegend span.swatch{
+    display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;
+  }
+
+  /* Pipeline / definition of done */
+  .pipeline{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    margin-top:16px;
+    flex-wrap:wrap;
+  }
+  .pipeline-step{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    text-align:center;
+    font-size:.82rem;
+    color:var(--muted);
+    min-width:96px;
+  }
+  .pipeline-step.done{
+    background:rgba(52,211,153,.15);
+    border-color:rgba(52,211,153,.5);
+    color:var(--text);
+    font-weight:700;
+  }
+  .pipeline-arrow{color:var(--muted);font-size:1.1rem;}
+
+  /* Bottleneck canvas animation */
+  .canvas-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    margin-top:6px;
+  }
+  #bottleneckCanvas{
+    max-width:100%;
+    height:auto;
+    background:#262f41;
+    border:1px solid var(--line);
+    border-radius:14px;
+  }
+  .toc-controls{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:2px;
+  }
+  .toc-btn{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:inherit;
+    font-size:.82rem;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .toc-btn:hover{
+    background:#1d2739;
+    border-color:var(--accent);
+  }
+  .toc-btn:active{transform:translateY(1px);}
+  .toc-btn:focus{outline:none;}
+  .toc-btn.reset{
+    color:var(--muted);
+    font-weight:500;
+  }
+  .toc-controls{flex-direction:column;align-items:center;gap:8px;}
+  .cap-sliders{
+    display:grid;
+    width:1160px;
+    max-width:100%;
+    box-sizing:border-box;
+    padding-left:204px;   /* line up with the pipe, past the customer inbox */
+    gap:0 10px;
+  }
+  .cap-slider{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+    cursor:pointer;
+  }
+  .cs-name{
+    font-size:.68rem;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .cap-slider.is-constraint .cs-name,
+  .cap-slider.is-constraint .cs-value{color:#ef4444;}
+  .cs-value{
+    font-family:monospace;
+    font-size:.72rem;
+    color:var(--accent);
+  }
+  .cap-slider input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    outline:none;
+    cursor:pointer;
+  }
+  .cap-slider.is-constraint input[type=range]{background:#ef4444;}
+  .cap-slider input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--text);
+    border:2px solid var(--bg);
+    box-shadow:0 1px 4px rgba(0,0,0,.6);
+    cursor:pointer;
+  }
+  .cap-slider input[type=range]::-moz-range-thumb{
+    width:12px;height:12px;
+    border-radius:50%;
+    background:var(--text);
+    border:2px solid var(--bg);
+    cursor:pointer;
+  }
+  .toc-readout{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    margin-top:4px;
+  }
+  .readout-box{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:8px 20px;
+    text-align:center;
+    min-width:132px;
+  }
+  .readout-box .rl{
+    font-size:.64rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--muted);
+  }
+  .readout-box .rv{
+    font-family:monospace;
+    font-size:1.5rem;
+    font-weight:700;
+    color:var(--text);
+    line-height:1.2;
+  }
+  .readout-box .rs{
+    font-size:.62rem;
+    color:var(--muted);
+  }
+  .readout-box.good .rv{color:var(--accent-3);}
+  .readout-box.good{border-color:rgba(52,211,153,.45);}
+  .readout-box.warn .rv{color:#ef4444;}
+  .readout-box.warn{border-color:rgba(239,68,68,.4);}
+  .readout-box.flash{
+    animation:flashPulse .8s ease;
+  }
+  @keyframes flashPulse{
+    0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}
+    100%{box-shadow:0 0 0 16px rgba(52,211,153,0);}
+  }
+  .toc-verdict{
+    margin-top:6px;
+    font-size:.95rem;
+    color:var(--muted);
+    text-align:center;
+    max-width:74ch;
+    min-height:2.6em;
+    line-height:1.4;
+  }
+  .toc-verdict b{color:var(--text);}
+  .toc-verdict .no{color:#ef4444;font-weight:700;}
+  .toc-verdict .yes{color:var(--accent-3);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <div class="center">
+      <h1>Building something<br>from scratch</h1>
+      <p class="sub">How we want to work together, and what we build first. Opinions we can argue with today, so we do not have to argue about them every week.</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="kicker">The north star</div>
+    <h1>One bar for everything</h1>
+    <p class="big-quote">Anyone with <span class="highlight">a year of experience</span> should be able to work in this system, frontend or backend.</p>
+    <p class="sub" style="margin-top:24px;">Every rule that follows exists only to protect that bar. If a rule and this goal conflict, the goal wins, and the rule gets revisited.</p>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker">What we're building on</div>
+    <h2>Architecture at a glance</h2>
+    <table class="rules">
+      <tr><th>Area</th><th>Tech</th></tr>
+      <tr><td>Frontend</td><td>React, TypeScript, React Query, generated OpenAPI models</td></tr>
+      <tr><td>Backend</td><td>.NET, ASP.NET Core, vertical slices, EF Core</td></tr>
+      <tr><td>Tests</td><td>xUnit + Shouldly, in-memory DbContext</td></tr>
+      <tr><td>Contract sync</td><td>OpenAPI → generated TypeScript, never hand-copied</td></tr>
+    </table>
+    <p class="sub" style="margin-top:20px;">Boring, well-documented choices. Nothing here is unusual, and that is the point. The interesting part is the contract between the two halves, which is the next slide.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <div class="kicker">The contract</div>
+    <h2>The contract has one home</h2>
+    <div class="flow-row">
+      <div class="flow-node source">
+        <div class="tag">Written by hand</div>
+        <div class="t">Backend</div>
+        <div class="s">DTOs, enums and shared constants. The only place a shared shape is decided.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node derived">
+        <div class="tag">Generated</div>
+        <div class="t">OpenAPI document</div>
+        <div class="s">Generated from the backend. The frontend models are regenerated from it; nobody hand-writes either copy.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node derived">
+        <div class="tag">Generated</div>
+        <div class="t">Frontend models</div>
+        <div class="s">Imported by the frontend, never hand-edited. If it looks wrong, the backend is wrong.</div>
+      </div>
+    </div>
+    <p class="big-quote" style="margin-top:22px;max-width:none;">One source of truth, so the contract <span class="highlight">cannot drift silently</span>.</p>
+    <ul class="points" style="margin-top:20px;">
+      <li><b>Every shared shape starts in the backend.</b> A type the frontend needs is a backend change first, not a TypeScript interface someone types out to unblock themselves.</li>
+      <li><b>Generated files are output, not source.</b> Editing one is like editing a build artifact: it works until the next regeneration, then it silently doesn't.</li>
+      <li><b>A contract change is one change, not two tickets.</b> Whoever changes the DTO ships the frontend that consumes it, in the same piece of work.</li>
+      <li><b>Most frontend and backend friction simply never happens.</b> It comes from two hand-maintained copies of the truth slowly disagreeing. With one copy there is nothing to reconcile, and nothing to call a meeting about.</li>
+    </ul>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <div class="kicker">Eight principles</div>
+    <h2>The standard, in one screen</h2>
+    <p class="sub" style="margin-bottom:6px;">Eight of them, and they answer four different questions. Grouped by the question they answer, rather than listed flat.</p>
+    <div class="grid cols-2 prin">
+      <div class="card">
+        <h3><span class="n">01</span> Who owns a shared shape</h3>
+        <p><b>Backend-first contracts.</b> DTOs, enums and constants originate in the backend.</p>
+        <p><b>Generated frontend models.</b> Imported, never duplicated by hand.</p>
+      </div>
+      <div class="card">
+        <h3><span class="n">02</span> How a feature is laid out</h3>
+        <p><b>Vertical slices.</b> Every endpoint owns its own folder, end to end.</p>
+        <p><b>Thin transport layer.</b> Controllers delegate; services hold the rules.</p>
+        <p><b>No repositories.</b> <code>DbContext</code> is already a repository and a unit of work. The query lives in the slice that needs it, projected straight into its DTO.</p>
+      </div>
+      <div class="card">
+        <h3><span class="n">03</span> What we allow in</h3>
+        <p><b>Few dependencies.</b> The platform first; a new package clears a high bar.</p>
+        <p><b>Obvious beats short.</b> Readability and consistency over cleverness.</p>
+      </div>
+      <div class="card">
+        <h3><span class="n">04</span> Who does the work</h3>
+        <p><b>Full-stack developers.</b> Everyone works both halves. Specialize, but do not silo.</p>
+        <p>The only principle here about people, and the one the rest of the deck spends the most time on.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <div class="kicker">The shape of the whole system</div>
+    <h2>Features stand up. Only the floor is shared.</h2>
+    <p class="sub" style="margin-bottom:2px;">Each feature owns its full height, and carries only the pieces it actually needs. Underneath sit two shared foundations, kept as small as we can get away with: one for the domain, one for the plumbing.</p>
+    <div class="vsa">
+      <div class="vsa-row" style="align-items:stretch;">
+        <div class="vsa-tier" style="align-self:center;">
+          <div class="tn">Owned by one feature</div>
+          <div class="tt">Feature slices</div>
+          <div class="td">One folder each. Added and deleted on their own.</div>
+        </div>
+        <div class="vsa-slices">
+      <div class="vsa-slice">
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature A</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature B</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip pres">Presentation</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature C</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip pres">Presentation</div>
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature D</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature E</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip pres">Presentation</div>
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature F</div>
+      </div>
+      <div class="vsa-slice">
+        <div class="vsa-chip pres">Presentation</div>
+        <div class="vsa-chip biz">Business logic</div>
+        <div class="vsa-chip data">Data access</div>
+        <div class="vsa-name">Feature G</div>
+      </div>
+        </div>
+      </div>
+      <div class="vsa-row">
+        <div class="vsa-tier">
+          <div class="tn">Shared domain</div>
+          <div class="tt">Data model</div>
+          <div class="td">The one model every slice reads and writes through.</div>
+        </div>
+        <div class="vsa-band shared">
+          <div class="vsa-cell">Entity model</div>
+          <div class="vsa-cell">DbContext</div>
+          <div class="vsa-cell">Migrations</div>
+        </div>
+      </div>
+      <div class="vsa-row">
+        <div class="vsa-tier">
+          <div class="tn">Shared plumbing</div>
+          <div class="tt">Platform</div>
+          <div class="td">Wiring and cross-cutting concerns. No business rules.</div>
+        </div>
+        <div class="vsa-band platform">
+          <div class="vsa-cell">Auth</div>
+          <div class="vsa-cell">IoC</div>
+          <div class="vsa-cell">Middleware</div>
+          <div class="vsa-cell">Config</div>
+        </div>
+      </div>
+    </div>
+    <div class="vsa-legend">
+      <span><span class="vsa-chip pres" style="padding:3px 8px;">Presentation</span> the controller</span>
+      <span><span class="vsa-chip biz" style="padding:3px 8px;">Business logic</span> the slice service</span>
+      <span><span class="vsa-chip data" style="padding:3px 8px;">Data access</span> the query, projected straight into the DTO</span>
+      <span style="color:var(--text);"><b>Notice C has no business logic, and A, B and E have no presentation.</b> A slice carries what it needs, not a mandatory set of three.</span>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="kicker">Repository shape</div>
+    <h2>One folder = one feature</h2>
+    <div class="tree"><span class="dir">backend/Features/Api/&lt;Feature&gt;/&lt;Action&gt;/</span>
+  Controller · Service · DTOs, all three in one folder
+
+<span class="dir">frontend/src/api/</span>
+  clients/    typed HTTP only
+  queries/    react-query reads
+  mutations/  react-query writes
+
+<span class="dir">frontend/src/models/generated/</span>  ← never hand-edited</div>
+    <p class="sub" style="margin-top:16px;">Deleting a feature's folder deletes the feature. If that's hard, the slice wasn't self-contained.</p>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="kicker">Repository shape, illustrated</div>
+    <h2>Same change, two codebases</h2>
+    <p class="sub" style="margin-bottom:16px;">The task: <b>add a field to "create order"</b>. Here is what you actually have to open.</p>
+    <div class="arch-compare">
+      <div class="arch-box">
+        <div class="label">Layered: organized by what things <i>are</i></div>
+        <div class="ftree">
+          <div><span class="fdir">Controllers/</span></div>
+          <div class="indent1 hit">OrdersController.cs <span class="tag">← edit</span></div>
+          <div class="indent1 dim">ProductsController.cs</div>
+          <div class="indent1 dim">CustomersController.cs</div>
+          <div><span class="fdir">Services/</span></div>
+          <div class="indent1 hit">OrderService.cs <span class="tag">← edit</span></div>
+          <div class="indent1 dim">ProductService.cs</div>
+          <div><span class="fdir">Repositories/</span></div>
+          <div class="indent1 hit">OrderRepository.cs <span class="tag">← edit</span></div>
+          <div class="indent1 dim">ProductRepository.cs</div>
+          <div><span class="fdir">Dtos/</span></div>
+          <div class="indent1 hit">CreateOrderRequest.cs <span class="tag">← edit</span></div>
+          <div class="indent1 dim">OrderDto.cs</div>
+        </div>
+      </div>
+      <div class="arch-box">
+        <div class="label">Vertical slice: organized by what things <i>do</i></div>
+        <div class="ftree">
+          <div><span class="fdir">Features/Api/Orders/</span></div>
+          <div class="indent1 dim">GetOrders/</div>
+          <div class="group">
+            <div><span class="fdir">CreateOrder/</span> <span class="gtag">← the whole change</span></div>
+            <div class="gfile">CreateOrderController.cs</div>
+            <div class="gfile">CreateOrderService.cs</div>
+            <div class="gfile">CreateOrderRequest.cs</div>
+          </div>
+          <div class="indent1 dim">UpdateOrder/</div>
+          <div class="indent1 dim">DeleteOrder/</div>
+          <div class="indent1 dim">CancelOrder/</div>
+          <div style="height:10px;"></div>
+          <div class="dim" style="font-size:.72rem;line-height:1.6;">Nothing else in the backend<br>needs to be opened, understood,<br>or re-tested.</div>
+        </div>
+      </div>
+    </div>
+    <div class="scoreline">
+      <span>Left: <b>4 files</b> in <b>4 folders</b>, and you have to know which four.</span>
+      <span>Right: <b>1 folder</b>, small enough to read and safe enough to delete.</span>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="kicker">The one exception to slice independence</div>
+    <h2>Only one slice may be called: Get</h2>
+    <p class="sub" style="margin-bottom:2px;">Slices do not call each other. If they did, we would be back to a tangle of services with no boundary. There is exactly one dependency we allow, because the alternative is worse.</p>
+    <div class="flow-row" style="margin-top:16px;">
+      <div class="flow-node write">
+        <div class="tag">Write slice</div>
+        <div class="t">Create / Update</div>
+        <div class="s">Does the work, then returns nothing but the identifier of the row it touched.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node reused">
+        <div class="tag">Read slice, reused</div>
+        <div class="t">Get service</div>
+        <div class="s">The controller hands it the identifier and asks for the canonical shape.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node">
+        <div class="tag">Response</div>
+        <div class="t">The same DTO as <code>GET</code></div>
+        <div class="s">A created resource looks exactly like a fetched one, because it is the same code.</div>
+      </div>
+    </div>
+    <ul class="points" style="margin-top:20px;">
+      <li><b>The write service returns an identifier, not a DTO.</b> Its job is the change. Describing the result is the read slice's job, and it already does it.</li>
+      <li><b>The dependency only ever points one way.</b> A write controller may reference the Get service. Get never references a write slice, and no other pair of slices may reference each other at all.</li>
+      <li><b>One definition of the response shape.</b> Without this, create and update grow their own projections, and three slices drift into three slightly different ideas of what a thing looks like.</li>
+      <li><b>If the response needs a new field, change the Get slice.</b> That is the whole point: there is one place to change, and every endpoint that returns the resource picks it up.</li>
+    </ul>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <div class="kicker">Integrations</div>
+    <h2>Keep the outside world at arm's length</h2>
+    <p class="sub" style="margin-bottom:6px;">Everything so far assumes we can change both sides of a contract and deploy them together. The moment something outside this team is involved, that stops being true, and the rules have to change with it.</p>
+    <div class="grid cols-3 tight">
+      <div class="card">
+        <h3>Our API, for our frontend</h3>
+        <p>Deployed together, generated models, changed freely. This is the one place a contract can be reshaped in a single commit.</p>
+      </div>
+      <div class="card">
+        <h3>A separate API for anyone else</h3>
+        <p>External callers get their own endpoints and their own DTOs, versioned and deprecated on purpose. Never our internal shapes, or every rename becomes someone else's outage.</p>
+      </div>
+      <div class="card">
+        <h3>Their model stops at the edge</h3>
+        <p>Whatever a third party sends, we translate it into our own types in the integration slice. Their field names and their quirks do not travel any further in.</p>
+      </div>
+    </div>
+    <ul class="points" style="margin-top:16px;">
+      <li><b>Outbox on the way out.</b> Write the message in the same transaction as the state change, and publish after it commits. Otherwise you eventually get a change nobody was told about, or an announcement of something that rolled back.</li>
+      <li><b>Inbox on the way in.</b> Record the message identifier before doing the work, so a redelivery is a no-op. Every queue is at-least-once, so handlers have to be safe to run twice.</li>
+      <li><b>Their failures become our exceptions.</b> Timeouts, partial success and retries stay inside the integration slice. The rest of the system sees a result or a domain exception, never a raw transport error.</li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <div class="center">
+      <div class="kicker">Part two</div>
+      <h1>The hard part</h1>
+      <p class="sub">Usually filed under soft skills, which undersells it. The code rules keep the codebase simple. These keep <span class="highlight">us</span> simple to work with, and they are the ones that actually decide how fast we go.</p>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <div class="kicker">How we're organized</div>
+    <h2>No frontend team. No backend team.</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Full-stack by default</h3>
+        <p>A feature is delivered end to end. Whoever changes a DTO changes the frontend that consumes it. Splitting work at the contract turns one task into two queues, and the handoff is where the misunderstanding lives.</p>
+      </div>
+      <div class="card">
+        <h3>Depth is welcome</h3>
+        <p>It's fine, expected even, to be an expert in one half. Depth is valuable and nobody is asked to be equally strong everywhere. What isn't optional is learning enough of the other half to read, change, and review it.</p>
+      </div>
+      <div class="card">
+        <h3>We own the seam</h3>
+        <p>The boundary between frontend and backend belongs to whoever is building the feature, not to a team on either side of it. Nobody optimizes their own layer at the expense of the join, because nobody has a layer to defend.</p>
+      </div>
+      <div class="card">
+        <h3>Learning the other half is the job</h3>
+        <p>Not overhead to do on your own time. It repays itself the first time a change doesn't have to wait for someone else.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide">
+    <div class="kicker">Handoffs, illustrated</div>
+    <h2>One change, two calendars</h2>
+    <p class="sub" style="margin-bottom:10px;">The task, both times: <b>add one field to the order form</b>. Green is someone actually working. Red stripes are the change sitting still.</p>
+    <div class="hchart">
+      <div class="hrow">
+        <div class="hlabel">Split by layer: backend dev, then a ticket, then a frontend dev</div>
+        <div class="hbar">
+          <div class="seg work" style="width:8.3%;">Backend<br>adds field</div>
+          <div class="seg wait" style="width:50%;">waiting in the frontend's queue (3 days)</div>
+          <div class="seg work" style="width:8.3%;">Frontend<br>builds it</div>
+          <div class="seg wait" style="width:25%;">blocked: field isn't what the ticket said</div>
+          <div class="seg work" style="width:8.4%;">Rework</div>
+        </div>
+        <div class="htotal"><b>6 days</b> from start to shipped · <b>1.5 days</b> of real work · two people had to understand it · one misunderstanding paid for twice</div>
+      </div>
+      <div class="hrow">
+        <div class="hlabel">Full-stack ownership: one developer, contract to component</div>
+        <div class="hbar">
+          <div class="seg work" style="width:16.7%;">One dev: DTO → endpoint → form</div>
+          <div class="seg empty" style="width:83.3%;"></div>
+        </div>
+        <div class="htotal"><b>1 day</b> from start to shipped · <b>1 day</b> of real work · nothing queued, nothing to re-explain</div>
+      </div>
+    </div>
+    <p class="big-quote" style="max-width:none;font-size:1.25rem;margin-top:4px;">The gap isn't typing speed. It's <span class="highlight">the queue and the misunderstanding</span>, and both exist only because the change had to cross a person.</p>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide">
+    <div class="kicker">Full stack, better code</div>
+    <h2>Owning both ends changes what you build</h2>
+    <div class="grid cols-2 tight">
+      <div class="card">
+        <h3>You expose only what the screen needs</h3>
+        <p>When you also write the consumer, the speculative fields, the "might be useful later" flags and the catch-all endpoint never get invented. Seeing the real usage pattern also shows you the states and branches nobody needs, which a single-layer view never reveals.</p>
+      </div>
+      <div class="card">
+        <h3>Logic lands on the side that owns it</h3>
+        <p>Filtering, sorting and totals go where the data already is, instead of being shipped across the wire and redone in the browser. You can see both costs at once, so the decision stops being a preference and becomes arithmetic.</p>
+      </div>
+      <div class="card">
+        <h3>Round trips collapse</h3>
+        <p>One person building both halves notices that the screen needs three calls to render, and fixes it by changing the endpoint rather than by adding a third call.</p>
+      </div>
+      <div class="card">
+        <h3>There is nobody to defend against</h3>
+        <p>Optional fields, tolerant parsing and validation duplicated on both sides are usually insurance against a person you have to negotiate with, not against a failure that can happen. Writing both ends, you design for what the system does rather than for what someone else might do to it.</p>
+      </div>
+      <div class="card">
+        <h3>You understand the problem, not your slice of it</h3>
+        <p>Building the endpoint and the screen that calls it shows you how a feature is actually used, not how it looked on paper. The edge case that only appears once the UI runs against real data is exactly the one worth handling carefully, and you meet it before a user does.</p>
+      </div>
+      <div class="card">
+        <h3>Boring versus fancy becomes a real trade-off</h3>
+        <p>You feel the full cost of an abstraction, the backend code <i>and</i> the frontend code it has to serve. That makes "obvious beats short" a judgment you can actually make instead of a slogan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide">
+    <div class="kicker">Full stack, better developer</div>
+    <h2>It's not just good for the code</h2>
+    <div class="grid cols-2 tight">
+      <div class="card">
+        <h3>More gets done</h3>
+        <p>No waiting on someone else's queue to unblock a feature, no re-loading context after a handoff. One person carrying a change end to end is simply faster than two people relaying it.</p>
+      </div>
+      <div class="card">
+        <h3>You can be handed anything</h3>
+        <p>Nobody has to work out which half a task belongs to before giving it to you. Work that has to be routed around a person is work that waits. Being the person it never has to be routed around is quietly one of the most valuable things to be.</p>
+      </div>
+      <div class="card">
+        <h3>People want you on their work</h3>
+        <p>Not "I'll take the API, you take the screen, let's sync Thursday". Picking something up means it's actually handled. Less left over for everyone else is the most reliable way there is to build trust, and trust is what buys autonomy later.</p>
+      </div>
+      <div class="card">
+        <h3>You make other people better</h3>
+        <p>You can unblock a teammate stuck in your strong half, review their PR with real understanding instead of rubber-stamping it, and hold both sides of a design conversation.</p>
+      </div>
+      <div class="card">
+        <h3>Learning happens on the job</h3>
+        <p>The work itself is the training. Every feature that crosses the boundary teaches you a bit more of the half you're weaker in, with no separate ramp-up project required.</p>
+      </div>
+      <div class="card">
+        <h3>Better estimates, less surprise</h3>
+        <p>Knowing the true cost of a change, both layers and not just your favorite one, makes your own planning honest, and makes the whole team's forecasts more trustworthy.</p>
+      </div>
+      <div class="card">
+        <h3>Shorter outages</h3>
+        <p>When something breaks in production, you already know where to look, with no relay race through two specialists to find the seam that failed.</p>
+      </div>
+      <div class="card">
+        <h3>Career resilience</h3>
+        <p>A skillset tied to one layer ages with that layer's fashions. Depth plus range is worth more, and for longer, to this team and to the next one.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide">
+    <div class="kicker">How we're organized</div>
+    <h2>Review outside your specialty</h2>
+    <p class="big-quote" style="max-width:none;">If you can't follow code in your weaker half, that's evidence about <span class="highlight">the code</span>, not about you.</p>
+    <div style="display:flex;justify-content:center;margin-top:10px;">
+      <svg viewBox="0 0 860 190" width="100%" style="max-width:860px;" role="img" aria-label="Backend-strong and frontend-strong developers review each other's pull requests">
+        <defs>
+          <linearGradient id="revUp" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#7dd3fc" stop-opacity=".25"/>
+            <stop offset="100%" stop-color="#7dd3fc" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="revDown" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#a78bfa" stop-opacity=".25"/>
+            <stop offset="100%" stop-color="#a78bfa" stop-opacity="1"/>
+          </linearGradient>
+          <marker id="revArrowUp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#7dd3fc"/>
+          </marker>
+          <marker id="revArrowDown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/>
+          </marker>
+        </defs>
+        <g>
+          <rect x="8" y="56" width="248" height="82" rx="14" fill="#121826" stroke="#22293a"/>
+          <text x="132" y="90" text-anchor="middle" fill="#e7edf5" font-family="Inter,system-ui,sans-serif" font-size="16" font-weight="700">Backend-strong dev</text>
+          <text x="132" y="114" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="13">strongest in C#, EF, the domain</text>
+        </g>
+        <g>
+          <rect x="604" y="56" width="248" height="82" rx="14" fill="#121826" stroke="#22293a"/>
+          <text x="728" y="90" text-anchor="middle" fill="#e7edf5" font-family="Inter,system-ui,sans-serif" font-size="16" font-weight="700">Frontend-strong dev</text>
+          <text x="728" y="114" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="13">strongest in React, state, UX</text>
+        </g>
+        <path d="M262 76 C 380 18, 480 18, 598 76" fill="none" stroke="url(#revUp)" stroke-width="2.5" marker-end="url(#revArrowUp)"/>
+        <text x="430" y="26" text-anchor="middle" fill="#7dd3fc" font-family="Inter,system-ui,sans-serif" font-size="13.5" font-weight="600">reviews the frontend PR</text>
+        <path d="M598 118 C 480 176, 380 176, 262 118" fill="none" stroke="url(#revDown)" stroke-width="2.5" marker-end="url(#revArrowDown)"/>
+        <text x="430" y="181" text-anchor="middle" fill="#a78bfa" font-family="Inter,system-ui,sans-serif" font-size="13.5" font-weight="600">reviews the backend PR</text>
+        <text x="430" y="101" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12.5" letter-spacing=".08em">BOTH WAYS, EVERY TIME</text>
+      </svg>
+    </div>
+    <ul class="points" style="margin-top:22px;">
+      <li>Everyone reviews everything, not just their own layer. A backend person reads the frontend PR; a frontend person reads the backend PR.</li>
+      <li>Code that only the author can review is a bottleneck disguised as expertise.</li>
+      <li><b>Experts teach rather than gatekeep.</b> A part of the system only one person can touch is a risk, not a strength. Explain it, pair on it, write it down.</li>
+      <li>Simplify until a reasonably experienced newcomer can follow it. That audience is the one-year bar in practice, and it's who we're writing for.</li>
+    </ul>
+  </section>
+
+  <!-- 17 -->
+  <section class="slide">
+    <div class="kicker">Team size</div>
+    <h2>Ten is the ceiling, not the target</h2>
+    <div class="grid cols-2" style="align-items:center;">
+      <div>
+        <p class="sub">Ten is roughly the largest group that can still hold shared context without inventing process to replace it. It is a ceiling worth defending. Past it, the coordination cost quietly eats the capacity you just added.</p>
+        <ul class="points" style="margin-top:16px;">
+          <li><b>Ten costs 45 connections. Twenty costs 190.</b> Double the people, four times the coordination, and every one of those links is someone who has to be told, asked, or kept in sync.</li>
+          <li><b>Growth doesn't add capacity, it adds coordination.</b> Each new person has to get context from everyone who already has it, paid for out of the day of the people already productive.</li>
+          <li><b>When a team stops feeling like one team, split it, don't grow it.</b> Two teams that each own something end to end beat one larger team held together by process.</li>
+          <li><b>Process is what fills in for trust.</b> Most sign-offs stand in for a conversation that stopped scaling. Under the ceiling that conversation is still possible, so have it.</li>
+        </ul>
+      </div>
+      <div style="display:flex;justify-content:center;">
+        <svg width="100%" style="max-width:560px;height:auto;" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Communication links grow quadratically with team size">
+          <defs>
+            <linearGradient id="curveFillSmall" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.32"/>
+              <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g>
+            <text x="68" y="33" fill="#e7edf5" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="700">Communication links</text>
+            <text x="236" y="33" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="15">=</text>
+            <text x="292" y="26" text-anchor="middle" fill="#7dd3fc" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="17">n<tspan font-style="normal" fill="#8b97ab">(</tspan>n<tspan font-style="normal" fill="#8b97ab"> − </tspan>1<tspan font-style="normal" fill="#8b97ab">)</tspan></text>
+            <line x1="260" y1="31" x2="324" y2="31" stroke="#7dd3fc" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+            <text x="292" y="47" text-anchor="middle" fill="#7dd3fc" font-family="Georgia,'Times New Roman',serif" font-size="17">2</text>
+            <text x="342" y="33" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12.5">quadratic, not linear</text>
+          </g>
+          <line x1="68" y1="252" x2="522" y2="252" stroke="#22293a" stroke-width="1.5"/>
+          <line x1="68" y1="54" x2="68" y2="252" stroke="#22293a" stroke-width="1.5"/>
+          <text x="68.0" y="272" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12">2</text><text x="141.0" y="272" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12">5</text><text x="262.7" y="272" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12">10</text><text x="384.3" y="272" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12">15</text><text x="506.0" y="272" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12">20</text>
+          <text x="287" y="294" text-anchor="middle" fill="#8b97ab" font-family="Inter,system-ui,sans-serif" font-size="12.5">people on the team</text>
+          <path d="M 68.0 251.0 L 92.3 249.0 L 116.7 246.0 L 141.0 242.0 L 165.3 237.0 L 189.7 231.0 L 214.0 224.0 L 238.3 216.0 L 262.7 207.0 L 287.0 197.0 L 311.3 186.0 L 335.7 174.0 L 360.0 161.0 L 384.3 147.0 L 408.7 132.0 L 433.0 116.0 L 457.3 99.0 L 481.7 81.0 L 506.0 62.0 L 506 252 L 68 252 Z" fill="url(#curveFillSmall)" stroke="none"/>
+          <path d="M 68.0 251.0 L 92.3 249.0 L 116.7 246.0 L 141.0 242.0 L 165.3 237.0 L 189.7 231.0 L 214.0 224.0 L 238.3 216.0 L 262.7 207.0 L 287.0 197.0 L 311.3 186.0 L 335.7 174.0 L 360.0 161.0 L 384.3 147.0 L 408.7 132.0 L 433.0 116.0 L 457.3 99.0 L 481.7 81.0 L 506.0 62.0" fill="none" stroke="#7dd3fc" stroke-width="3"/>
+          <line x1="262.7" y1="207.0" x2="262.7" y2="252" stroke="#34d399" stroke-width="1" stroke-dasharray="3 4" opacity=".6"/>
+          <circle cx="262.7" cy="207.0" r="6.5" fill="#34d399" stroke="#0b0f16" stroke-width="2.5"/>
+          <text x="246.7" y="193.0" text-anchor="end" fill="#e7edf5" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600">10 people</text>
+          <text x="246.7" y="211.0" text-anchor="end" fill="#34d399" font-family="Inter,system-ui,sans-serif" font-size="13.5" font-weight="700">45 links</text>
+          <line x1="506.0" y1="62.0" x2="506.0" y2="252" stroke="#ef4444" stroke-width="1" stroke-dasharray="3 4" opacity=".6"/>
+          <circle cx="506.0" cy="62.0" r="6.5" fill="#ef4444" stroke="#0b0f16" stroke-width="2.5"/>
+          <line x1="440" y1="76" x2="497" y2="56" stroke="#ef4444" stroke-width="1" opacity=".45"/>
+          <text x="432" y="72" text-anchor="end" fill="#e7edf5" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="600">20 people</text>
+          <text x="432" y="90" text-anchor="end" fill="#ef4444" font-family="Inter,system-ui,sans-serif" font-size="13.5" font-weight="700">190 links</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 -->
+  <section class="slide">
+    <div class="grid cols-2" style="height:100%;align-items:center;">
+      <div>
+        <div class="kicker">How we're organized</div>
+        <h2>Autonomy &amp; shared ownership</h2>
+        <ul class="points">
+          <li><b>Autonomy over approval:</b> ship the change, let review catch what it catches.</li>
+          <li><b>Shared ownership:</b> anyone may change any part of the system. Personal territory turns a person into a queue.</li>
+          <li>When we must grow, we split around <b>whole vertical features</b>, never around layers. Splitting by layer manufactures exactly the handoffs this architecture exists to avoid.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What this means day to day</h3>
+        <p>No sign-off chain before you can touch a file. No "that's So-and-so's module." If you see it, you can fix it, and you're trusted to ask first when you're unsure rather than wait for permission.</p>
+        <div class="own-compare">
+          <div class="own-panel">
+            <div class="own-title">🐞 Bug in billing: who may fix it?</div>
+            <div class="own-people">
+              <div class="own-person can"><span class="who">Ingrid</span>owns billing</div>
+              <div class="own-person cant"><span class="who">Jonas</span>not mine</div>
+              <div class="own-person cant"><span class="who">Kari</span>not mine</div>
+              <div class="own-person cant"><span class="who">Anders</span>not mine</div>
+            </div>
+            <div class="own-outcome bad">Three people are free. One is allowed. The fix waits until Ingrid is.</div>
+          </div>
+          <div class="own-panel">
+            <div class="own-title">🐞 Same bug, shared ownership</div>
+            <div class="own-people">
+              <div class="own-person can"><span class="who">Ingrid</span>reviews</div>
+              <div class="own-person can"><span class="who">Jonas</span>free</div>
+              <div class="own-person can"><span class="who">Kari</span>fixes it</div>
+              <div class="own-person can"><span class="who">Anders</span>free</div>
+            </div>
+            <div class="own-outcome good">Whoever has capacity fixes it today. Ingrid still reviews; she just isn't the queue.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 -->
+  <section class="slide">
+    <div class="kicker">Flow</div>
+    <h2>Limit work in progress</h2>
+    <p class="big-quote" style="max-width:none;">Everything in flight is <span class="highlight">unfinished inventory</span>. It has cost time and delivered nothing.</p>
+    <ul class="points" style="margin-top:20px;">
+      <li><b>Started is not delivered.</b> Three tasks at ninety percent are worth exactly nothing.</li>
+      <li><b>Finish before you start.</b> When new work arrives, the first question is what gets completed or dropped to make room for it.</li>
+      <li><b>Reviewing beats starting.</b> Work waiting for review is already paid for and not yet earning, so clearing someone else's queue beats opening a new task of your own.</li>
+      <li><b>Small changes merge fast.</b> Size a change to be reviewed in one sitting. Long-lived branches are work in progress too: they collect conflicts and hide risk until the worst possible moment.</li>
+      <li><b>Blocked work gets made visible, not stacked.</b> Starting a third task to look busy turns one delay into three.</li>
+    </ul>
+  </section>
+
+  <!-- 20 -->
+  <section class="slide">
+    <div class="kicker">WIP, illustrated</div>
+    <h2>Same three tasks, different order</h2>
+    <p class="sub" style="margin-bottom:10px;">Three tasks, two units of work each, one developer. Each colour is one task. Red stripes are time lost switching between them, work nobody asked for. Both rows use the same time axis.</p>
+    <div class="hchart">
+      <div class="hrow">
+        <div class="hlabel">One at a time: finish A, then B, then C</div>
+        <div class="hbar-wrap">
+          <!-- 8 of 11 units: 6 work + 2 switches, drawn to the same scale as the row below -->
+          <div class="hbar" style="width:72.73%;">
+            <div class="seg task-a" style="width:25%;">A</div>
+            <div class="seg wait" style="width:12.5%;">↹</div>
+            <div class="seg task-b" style="width:25%;">B</div>
+            <div class="seg wait" style="width:12.5%;">↹</div>
+            <div class="seg task-c" style="width:25%;">C</div>
+          </div>
+          <div class="ship" style="left:18.18%;"><span>A live</span></div>
+          <div class="ship" style="left:45.45%;"><span>B live</span></div>
+          <div class="ship" style="left:72.73%;"><span>C live</span></div>
+        </div>
+        <div class="htotal">Two switches, because even here you put one task down to pick the next up. A is in users' hands at <b>2</b>, B at <b>5</b>, C at <b>8</b>; average wait <b>5</b>. Value starts arriving a quarter of the way in.</div>
+      </div>
+      <div class="hrow">
+        <div class="hlabel">All three at once: a little of each, all the time</div>
+        <div class="hbar-wrap">
+          <div class="hbar">
+            <div class="seg task-a" style="width:9.09%;">A</div>
+            <div class="seg wait" style="width:9.09%;">↹</div>
+            <div class="seg task-b" style="width:9.09%;">B</div>
+            <div class="seg wait" style="width:9.09%;">↹</div>
+            <div class="seg task-c" style="width:9.09%;">C</div>
+            <div class="seg wait" style="width:9.09%;">↹</div>
+            <div class="seg task-a" style="width:9.09%;">A</div>
+            <div class="seg wait" style="width:9.09%;">↹</div>
+            <div class="seg task-b" style="width:9.09%;">B</div>
+            <div class="seg wait" style="width:9.09%;">↹</div>
+            <div class="seg task-c" style="width:9.10%;">C</div>
+          </div>
+          <div class="ship" style="left:63.63%;"><span>A live</span></div>
+          <div class="ship" style="left:81.81%;"><span>B</span></div>
+          <div class="ship" style="left:100%;"><span>C</span></div>
+        </div>
+        <div class="htotal">Five switches instead of two. Nothing ships until <b>7</b>, then B at <b>9</b> and C at <b>11</b>; average wait <b>9</b>. All the value lands at the end, and later.</div>
+      </div>
+      <div class="hrow">
+        <div class="hlabel">Saved time</div>
+        <div class="hbar-wrap">
+          <div class="hbar" style="background:transparent;border-style:dashed;">
+            <div class="seg empty" style="width:72.73%;border-right:none;"></div>
+            <div class="seg saved" style="width:27.27%;">3 units free</div>
+          </div>
+        </div>
+        <div class="htotal">Finishing one at a time hands the last task over <b>3 units</b> earlier and cuts the average wait from <b>9</b> to <b>5</b> — nearly half. That is a free task's worth of capacity, paid for with nothing but order.</div>
+      </div>
+    </div>
+    <div class="hlegend">
+      <span><span class="swatch" style="background:rgba(125,211,252,.9);"></span>task A</span>
+      <span><span class="swatch" style="background:rgba(167,139,250,.9);"></span>task B</span>
+      <span><span class="swatch" style="background:rgba(52,211,153,.9);"></span>task C</span>
+      <span><span class="swatch" style="background:repeating-linear-gradient(135deg,rgba(239,68,68,.25),rgba(239,68,68,.25) 3px,rgba(239,68,68,.5) 3px,rgba(239,68,68,.5) 6px);"></span>context switching</span>
+      <span><span class="swatch" style="background:rgba(251,191,36,.85);"></span>time saved</span>
+    </div>
+    <p class="big-quote" style="max-width:none;font-size:1.2rem;margin-top:18px;">Exactly the same work, exactly the same person. Splitting attention delayed <span class="highlight">every single task</span> and bought nothing.</p>
+  </section>
+
+  <!-- 21 -->
+  <section class="slide" id="bottleneckSlide">
+    <div class="kicker">The Goal, illustrated</div>
+    <h2>The constraint sets the pace. Nothing else does</h2>
+    <div class="canvas-wrap">
+      <canvas id="bottleneckCanvas" width="1160" height="300"></canvas>
+      <div class="toc-controls">
+        <div class="cap-sliders" style="grid-template-columns:repeat(6,1fr);">
+          <label class="cap-slider">
+            <span class="cs-name">Specification</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="5.4" data-stage="Specification" aria-label="Specification capacity">
+            <span class="cs-value" data-value="Specification">5.4/s</span>
+          </label>
+          <label class="cap-slider">
+            <span class="cs-name">Design</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="4.5" data-stage="Design" aria-label="Design capacity">
+            <span class="cs-value" data-value="Design">4.5/s</span>
+          </label>
+          <label class="cap-slider">
+            <span class="cs-name">Build</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="1.65" data-stage="Build" aria-label="Build capacity">
+            <span class="cs-value" data-value="Build">1.6/s</span>
+          </label>
+          <label class="cap-slider">
+            <span class="cs-name">Review</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="2.4" data-stage="Review" aria-label="Review capacity">
+            <span class="cs-value" data-value="Review">2.4/s</span>
+          </label>
+          <label class="cap-slider">
+            <span class="cs-name">Verify</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="4.2" data-stage="Verify" aria-label="Verify capacity">
+            <span class="cs-value" data-value="Verify">4.2/s</span>
+          </label>
+          <label class="cap-slider">
+            <span class="cs-name">Deploy</span>
+            <input type="range" min="0.5" max="10" step="0.05" value="6.0" data-stage="Deploy" aria-label="Deploy capacity">
+            <span class="cs-value" data-value="Deploy">6.0/s</span>
+          </label>
+        </div>
+        <button class="toc-btn reset" data-reset="1">↺ Reset all</button>
+      </div>
+      <div class="toc-readout">
+        <div class="readout-box good">
+          <div class="rl">Throughput</div>
+          <div class="rv" id="statThroughput">—</div>
+          <div class="rs">items / min</div>
+        </div>
+        <div class="readout-box">
+          <div class="rl">Shipped</div>
+          <div class="rv" id="statShipped">0</div>
+          <div class="rs">total</div>
+        </div>
+        <div class="readout-box warn">
+          <div class="rl">Waiting for the constraint</div>
+          <div class="rv" id="statQueued">0</div>
+          <div class="rs">unstarted + queued work</div>
+        </div>
+        <div class="readout-box warn">
+          <div class="rl">Lead time</div>
+          <div class="rv" id="statLeadTime">—</div>
+          <div class="rs">release &rarr; shipped</div>
+        </div>
+      </div>
+      <div class="toc-verdict" id="tocVerdict">Drag any capacity slider and watch the throughput number. Only one of them moves it.</div>
+    </div>
+  </section>
+
+  <!-- 22 -->
+  <section class="slide">
+    <div class="kicker">Before writing code</div>
+    <h2>Doing nothing beats doing the wrong thing</h2>
+    <p class="sub">Not acting is always on the table. A wrong change costs the work, the revert, and everything built on top of it in between. Waiting costs only time.</p>
+    <ul class="points" style="margin-top:20px;">
+      <li><b>Understand before you act.</b> Being busy is not progress. If the problem isn't clear yet, understanding it <i>is</i> the work.</li>
+      <li><b>The best code is the code you never wrote.</b> Every line is reviewed, tested, maintained, and eventually migrated.</li>
+      <li><b>Wait for the second example.</b> Build for what exists. An abstraction invented for one case is a guess, usually wrong in an expensive way.</li>
+      <li><b>Prefer the reversible decision.</b> Easy to undo: decide and move on. Hard to undo: slow down. Those are the only choices that earn the delay.</li>
+      <li><b>Deleting is a contribution.</b> Subtraction makes every future change cheaper.</li>
+    </ul>
+  </section>
+
+  <!-- 23 -->
+  <section class="slide">
+    <div class="kicker">How we decide</div>
+    <h2>Ask what it costs to undo</h2>
+    <p class="sub">Before arguing about the answer, agree on which kind of decision it is. What it costs to reverse, not how big or how interesting it is, decides how much care it has earned.</p>
+    <div class="decide-grid">
+      <div class="decide-panel easy">
+        <div class="dp-title">Easy to undo</div>
+        <div class="dp-cost">
+          <span class="dp-num">cost to reverse</span>
+          <span class="dp-track"><span class="dp-fill"></span></span>
+          <span class="dp-num">an afternoon</span>
+        </div>
+        <div class="dp-row"><span class="dp-k">Looks like</span><span class="dp-v">A folder layout, a library choice inside one slice, wording, a small refactor, the order of the backlog.</span></div>
+        <div class="dp-row"><span class="dp-k">Who decides</span><span class="dp-v">Whoever is closest to it, on the spot. No meeting.</span></div>
+        <div class="dp-row"><span class="dp-k">Time to spend</span><span class="dp-v">Minutes. Deciding slowly costs more than deciding wrong.</span></div>
+        <div class="dp-row"><span class="dp-k">If it's wrong</span><span class="dp-v">Change it back. You learned something real for the price of an afternoon.</span></div>
+      </div>
+      <div class="decide-panel hard">
+        <div class="dp-title">Hard to undo</div>
+        <div class="dp-cost">
+          <span class="dp-num">cost to reverse</span>
+          <span class="dp-track"><span class="dp-fill"></span></span>
+          <span class="dp-num">months</span>
+        </div>
+        <div class="dp-row"><span class="dp-k">Looks like</span><span class="dp-v">The database schema, a contract other people already call, how customer data is stored, a vendor the product is built on.</span></div>
+        <div class="dp-row"><span class="dp-k">Who decides</span><span class="dp-v">The team together, including whoever will maintain it.</span></div>
+        <div class="dp-row"><span class="dp-k">Time to spend</span><span class="dp-v">Days, deliberately. Write down what you rejected and why.</span></div>
+        <div class="dp-row"><span class="dp-k">If it's wrong</span><span class="dp-v">You live with it, or you pay for a migration while everything else waits.</span></div>
+      </div>
+    </div>
+    <p class="big-quote" style="max-width:none;font-size:1.15rem;margin-top:20px;">Most of what we debate is on the left and gets treated like the right. <span class="highlight">Say which side you're on before you argue</span>, and when in doubt, prefer the option that keeps tomorrow's options open.</p>
+  </section>
+
+  <!-- 24 -->
+  <section class="slide">
+    <div class="kicker">How we help each other</div>
+    <h2>Pair to move a problem earlier</h2>
+    <p class="sub">A problem costs almost nothing while the code is still being written, and more every hour after that. Pairing is not about company. It is about catching the thing on the first line instead of the third day.</p>
+    <div class="pair-cost">
+      <div class="pc-row">
+        <span class="pc-k">Caught while it's being written</span>
+        <span class="pc-bar"><i style="width:4%;background:var(--accent-3);"></i></span>
+        <span class="pc-v">One sentence out loud.</span>
+      </div>
+      <div class="pc-row">
+        <span class="pc-k">Caught in review</span>
+        <span class="pc-bar"><i style="width:22%;background:#fbbf24;"></i></span>
+        <span class="pc-v">A round trip, and two people rebuilding the context.</span>
+      </div>
+      <div class="pc-row">
+        <span class="pc-k">Caught after it's merged</span>
+        <span class="pc-bar"><i style="width:52%;background:#f97316;"></i></span>
+        <span class="pc-v">A second branch, a second review, work already built on top.</span>
+      </div>
+      <div class="pc-row">
+        <span class="pc-k">Caught in production</span>
+        <span class="pc-bar"><i style="width:100%;background:#ef4444;"></i></span>
+        <span class="pc-v">An outage, and everything else stops until it's fixed.</span>
+      </div>
+    </div>
+    <div class="pair-when">
+      <div class="pw-panel yes">
+        <div class="pw-title">Pair on this</div>
+        <ul>
+          <li>A bug nobody understands yet, because two people guess faster than one person stares.</li>
+          <li>Anything hard to undo. Deciding together costs an hour; deciding alone can cost a migration.</li>
+          <li>Work in the half of the stack you are weaker in. This is how the team stops having specialists nobody can cover for.</li>
+          <li>The first slice of anything new, so the shape gets agreed once rather than argued later.</li>
+        </ul>
+      </div>
+      <div class="pw-panel no">
+        <div class="pw-title">Do it alone</div>
+        <ul>
+          <li>Work you have done twenty times. A review afterwards is enough.</li>
+          <li>Reading, digging, reproducing. Thinking is quieter alone.</li>
+          <li>All day, every day. Pairing costs more attention than it returns if it never stops.</li>
+          <li>When it is really supervision. If one person watches another work, that is not pairing.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="big-quote" style="max-width:none;font-size:1.12rem;margin-top:20px;">When you do pair, <span class="highlight">the less experienced person types</span>. The one at the keyboard is the one learning.</p>
+  </section>
+
+  <!-- 25 -->
+  <section class="slide">
+    <div class="kicker">How we help each other</div>
+    <h2>Ask the moment you're stuck</h2>
+    <p class="sub">Waiting for the next meeting is not free. While you wait you keep working, on a guess, and some of that work has to be thrown away when the real answer arrives.</p>
+    <div class="hchart">
+      <div class="hrow">
+        <div class="hlabel">You ask straight away</div>
+        <div class="hbar">
+          <div class="seg wait" style="width:2%;"></div>
+          <div class="seg work" style="width:33.3%;">building the right thing</div>
+          <div class="seg empty" style="width:64.7%;"></div>
+        </div>
+        <div class="htotal">Blocked for <b>ten minutes</b>, then straight into the right work. Nothing is wasted.</div>
+      </div>
+      <div class="hrow">
+        <div class="hlabel">You save it for the next stand-up</div>
+        <div class="hbar">
+          <div class="seg guess" style="width:50%;">working from a guess</div>
+          <div class="seg waste" style="width:16.7%;">thrown away</div>
+          <div class="seg work" style="width:33.3%;">building the right thing</div>
+        </div>
+        <div class="htotal">Blocked for <b>three days</b>, and the work done in the meantime went in the bin. The same task finishes at the end of the week.</div>
+      </div>
+    </div>
+    <div class="hlegend">
+      <span><span class="swatch" style="background:repeating-linear-gradient(135deg,rgba(239,68,68,.25),rgba(239,68,68,.25) 3px,rgba(239,68,68,.5) 3px,rgba(239,68,68,.5) 6px);"></span>waiting for an answer</span>
+      <span><span class="swatch" style="background:repeating-linear-gradient(135deg,rgba(251,191,36,.25),rgba(251,191,36,.25) 3px,rgba(251,191,36,.5) 3px,rgba(251,191,36,.5) 6px);"></span>guessing, because nobody was asked</span>
+      <span><span class="swatch" style="background:rgba(239,68,68,.85);"></span>work discarded once the answer arrived</span>
+      <span><span class="swatch" style="background:rgba(52,211,153,.85);"></span>work that survived</span>
+    </div>
+    <ul class="points" style="margin-top:22px;">
+      <li><b>Meetings are a sync point, not the queue for questions.</b> If something needs an answer to move, it needed it hours ago.</li>
+      <li><b>The person who can unblock you would rather be asked.</b> Nobody enjoys finding out a day later that someone sat stuck out of politeness.</li>
+      <li><b>Assume you are allowed to interrupt.</b> Fifteen minutes of someone's attention beats a day of guessing.</li>
+      <li><b>Answer in the open</b>, not in a private message, so the next person can find it instead of asking again.</li>
+    </ul>
+  </section>
+
+  <!-- 26 -->
+  <section class="slide">
+    <div class="kicker">Two rules that look like they fight</div>
+    <h2>Interrupting someone is cheap. High WIP makes it expensive.</h2>
+    <p class="sub">We interrupt people the moment we are stuck—that is cheap. But it becomes expensive when they are juggling four unfinished tasks. The antidote is not isolation; it is finishing work.</p>
+    <div class="decide-grid">
+      <div class="decide-panel easy">
+        <div class="dp-title">One task + interruption</div>
+        <div class="dp-row"><span class="dp-k">Costs</span><span class="dp-v">A few minutes of someone's attention, plus a short walk back into their own work.</span></div>
+        <div class="dp-row"><span class="dp-k">Buys</span><span class="dp-v">Days off someone else's clock, and work that does not have to be thrown away.</span></div>
+        <div class="dp-row"><span class="dp-k">Net</span><span class="dp-v">Strongly positive. Take the interruption.</span></div>
+      </div>
+      <div class="decide-panel hard">
+        <div class="dp-title">Four tasks + interruption</div>
+        <div class="dp-row"><span class="dp-k">Costs</span><span class="dp-v">Four unfinished contexts compete for recovery. Context switching between your own tasks all day, plus one more interruption.</span></div>
+        <div class="dp-row"><span class="dp-k">Buys</span><span class="dp-v">They answer. But they lose the whole day.</span></div>
+        <div class="dp-row"><span class="dp-k">Fix</span><span class="dp-v">Reduce WIP. Fewer unfinished contexts means interruptions stay cheap.</span></div>
+      </div>
+    </div>
+    <p class="big-quote" style="max-width:none;font-size:1.12rem;margin-top:18px;">Protect focus by <span class="highlight">finishing things and keeping WIP low</span>, not by being unreachable.</p>
+  </section>
+
+  <!-- 27 -->
+  <section class="slide">
+    <div class="kicker">Definition of done</div>
+    <h2>Done means running in production, with users</h2>
+    <p class="sub">Not written, not merged, not deployed to a test environment.</p>
+    <div class="pipeline">
+      <div class="pipeline-step">Written</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Reviewed</div> 
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Merged</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Deployed</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step done">✓ Used in prod</div>
+    </div>
+    <ul class="points" style="margin-top:20px;">
+      <li><b>Merged is not done.</b> Code waiting on the main branch for a release is inventory: paid for, aging, teaching nobody anything.</li>
+      <li><b>Ship small and often.</b> Frequent small releases make each one boring; batching concentrates risk and hides which change caused the problem.</li>
+      <li><b>Only users can tell you it works.</b> Passing tests prove the code does what you expected, not that what you expected was worth building.</li>
+      <li><b>You own it after it ships.</b> Deployment starts the feedback loop; watching it run is part of the same piece of work.</li>
+      <li><b>Releasing is routine, not an event.</b> If it needs a plan, a window, and an audience, it happens too rarely.</li>
+    </ul>
+  </section>
+
+  <!-- 28 -->
+  <section class="slide">
+    <div class="center">
+      <div class="kicker">Part three</div>
+      <h1>Back to the system</h1>
+      <p class="sub">The trust, the small team, and the tight feedback loops only work if the codebase stays this simple. That's what the rest of this deck protects.</p>
+    </div>
+  </section>
+
+  <!-- 29 -->
+  <section class="slide">
+    <div class="kicker">Dependencies</div>
+    <h2>The platform first, a package second</h2>
+    <table class="rules">
+      <tr><th>Instead of</th><th>Use</th></tr>
+      <tr><td>AutoMapper</td><td>An explicit <code>.Select(...)</code> projection</td></tr>
+      <tr><td>MediatR</td><td>Call the slice service directly</td></tr>
+      <tr><td>FluentValidation</td><td>A static validator with guard clauses</td></tr>
+      <tr><td>Repository over DbContext</td><td><code>DbContext</code> already is one</td></tr>
+      <tr><td>axios / moment / uuid</td><td><code>fetch</code> / <code>Intl</code> / <code>crypto.randomUUID()</code></td></tr>
+    </table>
+    <p class="sub" style="margin-top:18px;">The test: if this package vanished, would the replacement be a few readable lines? If so, write those lines. Adding a dependency is a discussion, not a detail.</p>
+  </section>
+
+  <!-- 30 -->
+  <section class="slide">
+    <div class="kicker">Whose project is it</div>
+    <h2>Someone else pays for every choice we make</h2>
+    <p class="sub">Curiosity is the job. Trying things is how anyone gets better. But a customer system is not where we go to find out whether we like a technology, and the person who inherits our decision is rarely the person who made it.</p>
+    <div class="decide-grid">
+      <div class="decide-panel easy">
+        <div class="dp-title">Choosing for the customer</div>
+        <div class="dp-row"><span class="dp-k">Asks</span><span class="dp-v">What will the next developer understand fastest, and what can this team still support in three years?</span></div>
+        <div class="dp-row"><span class="dp-k">Looks like</span><span class="dp-v">The obvious tool, used the ordinary way, because someone can be productive in it on their second day.</span></div>
+        <div class="dp-row"><span class="dp-k">Result</span><span class="dp-v">A system anyone on the team can pick up, change and hand over.</span></div>
+      </div>
+      <div class="decide-panel hard">
+        <div class="dp-title">Choosing for yourself</div>
+        <div class="dp-row"><span class="dp-k">Asks</span><span class="dp-v">What would be interesting to build, or good to have used once?</span></div>
+        <div class="dp-row"><span class="dp-k">Looks like</span><span class="dp-v">A clever abstraction nobody asked for, a framework inside the framework, a library chosen because it was new.</span></div>
+        <div class="dp-row"><span class="dp-k">Result</span><span class="dp-v">Something only its author can maintain, long after its author has moved on.</span></div>
+      </div>
+    </div>
+    <div class="tell">
+      <div class="tell-k">The honest question to ask yourself</div>
+      <p>Would I still pick this if I had to support it for five years, and if nobody would ever know I had chosen it? If the answer changes once you remove the audience, it was never a technical decision.</p>
+    </div>
+    <ul class="points" style="margin-top:16px;">
+      <li><b>Learn on the job, not with the job.</b> There is plenty to get better at inside boring choices: the domain, the tests, the flow, the review. Experiments belong in a spike, a side project, or a deliberate and time-boxed trial we agreed on together.</li>
+      <li><b>Say the real reason out loud.</b> "I want to try this" is a completely legitimate thing to want, and it is a discussion the team can have. It just cannot arrive disguised as a technical argument in a pull request.</li>
+    </ul>
+  </section>
+
+  <!-- 31 -->
+  <section class="slide">
+    <div class="kicker">Up for discussion, 1 of 4: how code reads</div>
+    <h2>Boring, obvious, consistent</h2>
+    <p class="sub" style="margin-bottom:4px;"><b style="color:var(--text)">The next four slides are starting positions, not commandments.</b> Each one exists so the next person to open a file, possibly you a year from now, does not have to reconstruct what the author was thinking. Argue with any of them today, and we keep what survives the argument.</p>
+    <div class="grid rules-grid">
+      <div class="card"><h3>No <code>else</code></h3><p>Guard clauses and early returns. The happy path stays flat and reads top to bottom.</p></div>
+      <div class="card"><h3>Avoid <code>try/catch</code></h3><p>Only when the failure is genuinely handled here, never to log-and-rethrow, swallow, or return a default.</p></div>
+      <div class="card"><h3>200 lines per file</h3><p>Past that it is usually two ideas sharing a name. Split along the seam, not at the line count.</p></div>
+      <div class="card"><h3>No abbreviations</h3><p><code>architecturePrincipleId</code>, not <code>apId</code>. Nobody has ever been slowed down by a name that was too clear.</p></div>
+      <div class="card"><h3>Boring beats clever</h3><p>Prefer explicit code over an abstraction that saves a few lines. Code is written once and read for years.</p></div>
+      <div class="card"><h3>Match the surrounding code</h3><p>Consistency beats personal preference. A file should not reveal how many people have edited it.</p></div>
+      <div class="card"><h3>Comments explain why</h3><p>Never what. Delete comments that restate the code. They rot, and then they lie.</p></div>
+      <div class="card"><h3>Name our own types</h3><p><code>PraxisDbContext</code>, not <code>AppDbContext</code>. The prefix says <i>this one is ours</i>, so nobody hunts for framework docs.</p></div>
+      <div class="card"><h3>Prefix our own platform types</h3><p><code>PraxisDbContext</code>, not <code>AppDbContext</code>. The prefix tells the reader this one is ours, not a framework type to go looking up.</p></div>
+      <div class="card"><h3>A new endpoint is a new folder</h3><p>Never a second action bolted onto an existing slice. Deleting the folder deletes the feature.</p></div>
+      <div class="card"><h3>Wait for the second example</h3><p>An abstraction invented for one case fits exactly one case. Duplication is cheaper than the wrong shape.</p></div>
+      <div class="card"><h3>Deleting is a contribution</h3><p>Subtraction makes every future change cheaper. The best code is the code you never wrote.</p></div>
+    </div>
+  </section>
+
+  <!-- 32 -->
+  <section class="slide">
+    <div class="kicker">Up for discussion, 2 of 4: hygiene</div>
+    <h2>Habits that keep production boring</h2>
+    <p class="sub" style="margin-bottom:4px;">Hygiene, not cleverness. Every one of these passes on your machine; skip one and nothing happens until the table is big, the request is concurrent, the environment is different, or the row has already been written, and by then it is not a code change any more.</p>
+    <div class="grid rules-grid">
+      <div class="card"><h3>Relationships go both ways</h3><p>The child keeps <code>FooId</code> and <code>Foo</code>; the parent keeps <code>List&lt;Bar&gt;</code>. The model reads the same from either end.</p></div>
+      <div class="card"><h3>The <code>DbContext</code> is the repository</h3><p>EF already implements repository and unit of work. A wrapper over it only hides what it actually does.</p></div>
+      <div class="card"><h3>Queries live in the slice</h3><p>No shared query layer. Project straight into the DTO with <code>.Select(...)</code> so the database returns only what is used.</p></div>
+      <div class="card"><h3>Reads do not track</h3><p><code>AsNoTracking()</code> on every read path, and loading is explicit, with no lazy proxies quietly issuing queries.</p></div>
+      <div class="card"><h3>No queries inside loops</h3><p>Fetch what you need in one round trip. An N+1 is invisible on your machine and brutal in production.</p></div>
+      <div class="card"><h3>Everything translates to SQL</h3><p>Filter, sort and page in the database. Falling back to memory works until the table grows.</p></div>
+      <div class="card"><h3>One <code>SaveChanges</code> per request</h3><p>A unit of work applies atomically, or not at all. Half-applied writes are the worst bug to find.</p></div>
+      <div class="card"><h3>Never set audit fields by hand</h3><p><code>SaveChanges</code> owns them. Hand-written timestamps are the ones you stop trusting first.</p></div>
+      <div class="card"><h3>Never renumber a persisted enum</h3><p>The values are stored as integers. Reordering them silently rewrites what every existing row meant.</p></div>
+      <div class="card"><h3>The <code>DbContext</code> is scoped</h3><p>Never captured in a singleton, a static, or a parallel task. It is not thread-safe, and the bug it causes looks like anything but that.</p></div>
+      <div class="card"><h3>Secrets never enter the repository</h3><p>User secrets locally, the platform in production. A committed secret is leaked permanently, not temporarily.</p></div>
+      <div class="card"><h3>Configuration fails at startup</h3><p>Missing required settings stop the application immediately, instead of surfacing as a null at two in the morning.</p></div>
+    </div>
+  </section>
+
+  <!-- 33 -->
+  <section class="slide">
+    <div class="kicker">Up for discussion, 3 of 4: the shape of a feature</div>
+    <h2>Where each piece of a change belongs</h2>
+    <p class="sub" style="margin-bottom:4px;">Most arguments about structure are really arguments about where something goes. Deciding it once, out loud, means nobody has to relitigate it in a review six months from now.</p>
+    <div class="grid rules-grid">
+      <div class="card"><h3>Controllers stay thin</h3><p>Validate the input, call the service, return. A controller with a branch in it has started keeping a secret.</p></div>
+      <div class="card"><h3>One slice, one action</h3><p>One controller, one public action, one service method. A second entry point means a second slice.</p></div>
+      <div class="card"><h3>Slices do not call slices</h3><p>The single exception: a write controller may call its own Get service, so the read shape is defined once.</p></div>
+      <div class="card"><h3>No shared <code>Helpers</code> folder</h3><p>No shared <code>Dtos</code>, <code>Models</code> or <code>Services</code> bucket either. Shared folders are where coupling goes to hide.</p></div>
+      <div class="card"><h3>No interface for one implementation</h3><p>An interface with a single implementor is a rename waiting to happen, plus a file you have to open twice.</p></div>
+      <div class="card"><h3>Every DTO property is <code>required</code></h3><p>Optionality is expressed by the type, <code>string?</code>, never by leaving a field out of the payload.</p></div>
+      <div class="card"><h3>DTOs are flat</h3><p>Never expose an entity over the wire. The shape the frontend sees is a decision, not a side effect of the database.</p></div>
+      <div class="card"><h3>Throw domain exceptions</h3><p>The middleware maps them to status codes. A slice should never be picking HTTP numbers.</p></div>
+      <div class="card"><h3>The backend owns the contract</h3><p>If the frontend needs a different shape, change the DTO and regenerate. Never paper over it with a hand-written interface.</p></div>
+      <div class="card"><h3>Generated files are output</h3><p>Never hand-edited, never partially trusted. If the generated model is wrong, the backend is wrong.</p></div>
+      <div class="card"><h3>Query keys come from the enum</h3><p>Never an inline string, and every mutation invalidates what it affected. Stale screens are a caching bug, not bad luck.</p></div>
+      <div class="card"><h3>Test against an in-memory database</h3><p>Use an in-memory <code>DbContext</code>, never a mocked one. Cover the happy path and every domain exception you throw.</p></div>
+    </div>
+  </section>
+
+  <!-- 34 -->
+  <section class="slide">
+    <div class="kicker">Up for discussion, 4 of 4: how much language to use</div>
+    <h2>Use less of the language than you know</h2>
+    <p class="sub" style="margin-bottom:8px;">ASP.NET, EF Core and the BCL are already full of generics, reflection and abstract types, so that our code does not have to be. That is the trade: the framework absorbs the hard machinery, and what we write stays something you can read top to bottom.</p>
+    <table class="rules">
+      <tr><th>Reaching for</th><th>Write instead</th></tr>
+      <tr><td>An interface with one implementation</td><td>The class. Add the interface the day a second implementation or a real test double exists</td></tr>
+      <tr><td>An abstract base class</td><td>A plain class, and a little duplication until the shared shape is actually obvious</td></tr>
+      <tr><td>Reflection or convention magic</td><td>An explicit <code>switch</code>, or a dictionary you can read and breakpoint</td></tr>
+      <tr><td>A generic <code>T</code> helper</td><td>Two concrete methods. Generics are for containers, not for saving keystrokes</td></tr>
+      <tr><td>Expression trees, source generators, custom attributes</td><td>The boring version, written out</td></tr>
+    </table>
+    <ul class="points" style="margin-top:16px;">
+      <li><b>Go-to-definition should land on the code that runs.</b> Every indirection turns one jump into two, and the second jump usually lands on a contract that tells you to keep looking.</li>
+      <li><b>There are real reasons to use all of these.</b> A genuine second implementation, a boundary that must be faked in tests, a hot path that needs it. The rule is that the reason comes first and the abstraction second, never the other way round.</li>
+    </ul>
+  </section>
+
+  <!-- 35 -->
+  <section class="slide">
+    <div class="kicker">First weeks</div>
+    <h2>What we build first</h2>
+    <ul class="points">
+      <li><b>Set up the scaffolding:</b> vertical-slice backend, generated-model frontend, the reference slice as a living example.</li>
+      <li><b>Ship the smallest vertical slice end to end:</b> one endpoint, one screen, one team member doing both halves.</li>
+      <li><b>Wire up the mechanical bar:</b> <code>dotnet build</code>, <code>dotnet test</code>, <code>npm run lint</code>, <code>npm run typecheck</code> green before anything else counts.</li>
+      <li><b>Seed the AI configuration:</b> instructions and skills so every contributor, human or agent, follows the same standard automatically.</li>
+      <li><b>Deploy on day one:</b> a boring pipeline that ships small changes constantly, before there's anything exciting to ship.</li>
+    </ul>
+  </section>
+
+  <!-- 36 -->
+  <section class="slide">
+    <div class="kicker">Recommended reading: flow &amp; delivery</div>
+    <h2>Where these ideas come from</h2>
+    <div class="books">
+      <div class="book">
+        <div class="author">Goldratt</div>
+        <div class="title">The Goal</div>
+        <p>The origin of it all: a bottleneck sets the pace of the whole system. Speeding up anything else is wasted effort. This is why we protect flow over local busyness.</p>
+      </div>
+      <div class="book">
+        <div class="author">Kim, Behr, Spafford</div>
+        <div class="title">The Phoenix Project</div>
+        <p>The Goal, retold as an IT crisis novel. WIP limits, handoffs, and unplanned work made vivid, and the case for everything in our "flow of work" slides.</p>
+      </div>
+      <div class="book">
+        <div class="author">Gene Kim</div>
+        <div class="title">The Unicorn Project</div>
+        <p>Same story, developer's side. Makes the case for full-stack ownership and fast feedback loops directly from the trenches.</p>
+      </div>
+      <div class="book">
+        <div class="author">Forsgren, Humble, Kim</div>
+        <div class="title">Accelerate</div>
+        <p>The research behind the novels: small batches, fast feedback, and trunk-based flow are measurably correlated with elite performance, not just a nice story.</p>
+      </div>
+      <div class="book">
+        <div class="author">Mik Kersten</div>
+        <div class="title">Project to Product</div>
+        <p>Why measuring flow, not utilization, is what tells you whether the team is actually delivering value.</p>
+      </div>
+      <div class="book">
+        <div class="author">Fred Brooks</div>
+        <div class="title">The Mythical Man-Month</div>
+        <p>The classic case for small teams: communication paths grow faster than headcount, so adding people to a late project makes it later.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 37 -->
+  <section class="slide">
+    <div class="kicker">Recommended reading: team &amp; craft</div>
+    <h2>How to work together, and write it well</h2>
+    <div class="books">
+      <div class="book">
+        <div class="author">Woody Zuill</div>
+        <div class="title">Mob Programming</div>
+        <p>The opposite of a silo taken to its logical end: the whole team, one keyboard, one problem, at once. Makes the case for shared ownership without a single handoff.</p>
+      </div>
+      <div class="book">
+        <div class="author">L. David Marquet</div>
+        <div class="title">Turn the Ship Around!</div>
+        <p>Autonomy and shared ownership in practice: "I intend to…" instead of asking permission. The playbook behind our "autonomy over approval" rule.</p>
+      </div>
+      <div class="book">
+        <div class="author">Patrick Lencioni</div>
+        <div class="title">The Five Dysfunctions of a Team</div>
+        <p>Trust is the foundation everything else sits on. Explains exactly why we treat trust, not process, as the multiplier on a small team.</p>
+      </div>
+      <div class="book">
+        <div class="author">Kent Beck</div>
+        <div class="title">Extreme Programming Explained</div>
+        <p>Small releases, pairing, simple design, courage. Most of part two is XP values under a different name.</p>
+      </div>
+      <div class="book">
+        <div class="author">John Ousterhout</div>
+        <div class="title">A Philosophy of Software Design</div>
+        <p>A rigorous case for "obvious beats short": complexity is the enemy, and it accumulates in small decisions, not big ones.</p>
+      </div>
+      <div class="book">
+        <div class="author">Robert C. Martin</div>
+        <div class="title">Clean Architecture</div>
+        <p>The reasoning behind thin controllers and slices that own their own logic: dependencies should point at the business rules, not away from them.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 38 -->
+  <section class="slide">
+    <div class="center">
+      <div class="kicker">Let's go</div>
+      <h1>Small team.<br>Boring code.<br>Shipped constantly.</h1>
+      <p class="sub">Trust each other, keep work in progress low, and let the standard, not a meeting, settle the disagreements.</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="footer">
+  <div class="nav-hint">
+    <span id="pageno">1 / N</span>
+    <button class="nav-btn" id="prevBtn" title="Previous slide (←)" aria-label="Previous slide">←</button>
+    <button class="nav-btn" id="nextBtn" title="Next slide (→)" aria-label="Next slide">→</button>
+  </div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let i = 0;
+  const progress = document.getElementById('progress');
+  const pageno = document.getElementById('pageno');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function render(){
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    pageno.textContent = (i + 1) + ' / ' + total;
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+  function go(delta){
+    i = Math.min(total - 1, Math.max(0, i + delta));
+    render();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.target instanceof Element && e.target.closest('.toc-controls')) return;
+    if (e.target instanceof Element && e.target.closest('.nav-btn')) return;
+    if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)) { go(1); e.preventDefault(); }
+    if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) { go(-1); e.preventDefault(); }
+  });
+  prevBtn.addEventListener('click', () => { go(-1); prevBtn.blur(); });
+  nextBtn.addEventListener('click', () => { go(1); nextBtn.blur(); });
+  render();
+
+  /* ---- Constraint / bottleneck flow animation (Theory of Constraints) ----
+     Capacity is the single source of truth: pipe width, ball speed and
+     throughput are all derived from it, so the simulation cannot "cheat"
+     and show a result the arithmetic would not produce. */
+  (function () {
+    /** @type {HTMLCanvasElement | null} */
+    const canvas = document.getElementById('bottleneckCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width, H = canvas.height, cy = H / 2 + 6;
+
+    const BALL_R = 7;
+    const MIN_GAP = 17;          // spacing of jammed work items
+    const ARRIVAL = 5.0;         // requests/sec from customers, whatever the line can absorb
+    const CAP_REF = 6.0;         // capacity that maps to the widest pipe
+    const INBOX_X0 = 6, INBOX_X1 = 190;
+    const PIPE_X0 = 204;         // the line starts after the customer inbox
+
+    // capacity is items/sec. Flow = velocity / gap, so velocity = capacity * gap.
+    const BASE_STAGES = [
+      { label: 'Specification', x0: 204, x1: 363, capacity: 5.4 },
+      { label: 'Design', x0: 363, x1: 523, capacity: 4.5 },
+      { label: 'Build',  x0: 523, x1: 682, capacity: 1.65 },
+      { label: 'Review', x0: 682, x1: 841, capacity: 2.4 },
+      { label: 'Verify', x0: 841, x1: 1001, capacity: 4.2 },
+      { label: 'Deploy', x0: 1001, x1: 1160, capacity: 6.0 },
+    ];
+
+    let stages, balls, backlog, arrivalCarry, shipped, completions, throughputEma, leadTimeEma, rafId, lastFrame, warmClock;
+
+    function reset() {
+      stages = BASE_STAGES.map(s => Object.assign({}, s, { baseCapacity: s.capacity }));
+      balls = [];
+      backlog = [];
+      arrivalCarry = 0;
+      shipped = 0;
+      completions = [];
+      throughputEma = null;
+      leadTimeEma = null;
+      lastFrame = null;
+      warmClock = 0;
+      warmUp(30);
+      shipped = 0;
+      syncSliders();
+      setVerdict('Drag any capacity slider and watch the throughput number. Only one of them moves it.');
+    }
+
+    const capacityOf = s => s.capacity;
+    const constraintStage = () =>
+      stages.reduce((min, s) => (capacityOf(s) < capacityOf(min) ? s : min), stages[0]);
+
+    function radiusOfCapacity(cap) {
+      const scaled = Math.min(cap / CAP_REF, 1.25);
+      return 16 + scaled * 62;
+    }
+
+    // Smooth capacity between stage centres so the pipe has no hard steps.
+    function capacityAt(x) {
+      const mids = stages.map(s => ({ x: (s.x0 + s.x1) / 2, c: capacityOf(s) }));
+      if (x <= mids[0].x) return mids[0].c;
+      if (x >= mids[mids.length - 1].x) return mids[mids.length - 1].c;
+      for (let k = 0; k < mids.length - 1; k++) {
+        const a = mids[k], b = mids[k + 1];
+        if (x >= a.x && x <= b.x) {
+          const t = (x - a.x) / (b.x - a.x);
+          const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
+          return a.c + (b.c - a.c) * eased;
+        }
+      }
+      return mids[mids.length - 1].c;
+    }
+
+    const radiusAt = x => radiusOfCapacity(capacityAt(x));
+
+    function advance(dt, clock) {
+      // Front of the queue first, so each item is blocked by the one ahead.
+      balls.sort((a, b) => b.x - a.x);
+
+      // Work is pushed in at a fixed rate, whatever the line can absorb. Items
+      // that do not fit yet wait in the backlog, so when demand exceeds the
+      // constraint the queue grows without bound, as it does in real life.
+      arrivalCarry += ARRIVAL * dt;
+      while (arrivalCarry >= 1) { backlog.push(clock); arrivalCarry -= 1; }
+
+      const leftmost = balls.length ? balls[balls.length - 1].x : Infinity;
+      if (backlog.length && leftmost >= PIPE_X0 + MIN_GAP - BALL_R) {
+        balls.push({ x: PIPE_X0 - BALL_R, released: backlog.shift() });
+      }
+
+      for (let k = 0; k < balls.length; k++) {
+        const ball = balls[k];
+        const velocity = capacityAt(ball.x) * MIN_GAP;
+        const free = ball.x + velocity * dt;
+        const ahead = balls[k - 1];
+        ball.x = ahead ? Math.min(free, ahead.x - MIN_GAP) : free;
+      }
+      balls = balls.filter(b => {
+        if (b.x > W + BALL_R) {
+          shipped++;
+          completions.push(clock);
+          const lead = (clock - b.released) / 1000;
+          leadTimeEma = leadTimeEma === null ? lead : leadTimeEma + (lead - leadTimeEma) * 0.15;
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // Run the line to steady state before anyone looks at it, so the readouts
+    // are meaningful from the first frame instead of counting up from zero.
+    function warmUp(seconds) {
+      const dt = 1 / 60;
+      for (let t = 0; t < seconds; t += dt) advance(dt, warmClock += dt * 1000);
+    }
+
+    function step(ts) {
+      if (lastFrame === null) lastFrame = ts;
+      const dt = Math.min((ts - lastFrame) / 1000, 0.05);
+      lastFrame = ts;
+      warmClock += dt * 1000;
+
+      advance(dt, warmClock);
+      updateStats(warmClock);
+      draw();
+      rafId = requestAnimationFrame(step);
+    }
+
+    function updateStats(ts) {
+      const WINDOW_MS = 6000;
+      while (completions.length && ts - completions[0] > WINDOW_MS) completions.shift();
+      const elapsed = Math.min(ts, WINDOW_MS) / 1000;
+      if (elapsed > 1) {
+        const rate = (completions.length / elapsed) * 60;
+        throughputEma = throughputEma === null ? rate : throughputEma + (rate - throughputEma) * 0.15;
+      }
+
+      const constraint = constraintStage();
+      const queued = balls.filter(b => b.x < constraint.x0).length + backlog.length;
+
+      setText('statThroughput', throughputEma === null ? '—' : Math.round(throughputEma));
+      setText('statShipped', shipped);
+      setText('statQueued', queued);
+      setText('statLeadTime', leadTimeEma === null ? '\u2014' : leadTimeEma.toFixed(1) + 's');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el && el.textContent !== String(value)) el.textContent = value;
+    }
+
+    // The customer keeps asking, whatever the team can absorb. Requests pile up
+    // here until the line has room for one -- this pile is the demand side of
+    // the picture, and it is the number that grows when demand beats capacity.
+    function drawInbox() {
+      const y0 = 34, y1 = H - 36;
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(INBOX_X0, y0, INBOX_X1 - INBOX_X0, y1 - y0, 10);
+      ctx.fillStyle = 'rgba(239,68,68,0.06)';
+      ctx.fill();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(139,151,171,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.textAlign = 'center';
+      const mid = (INBOX_X0 + INBOX_X1) / 2;
+      ctx.fillStyle = '#8b97ab';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillText('WHAT THE CUSTOMER', mid, 15);
+      ctx.fillText('ASKED FOR', mid, 29);
+
+      // Requests as a pile, newest on top, capped so the box cannot overflow.
+      const cols = 12, dot = 4.5, stepX = 14, stepY = 14;
+      const rows = Math.floor((y1 - y0 - 40) / stepY);
+      const capacity = cols * rows;
+      const drawn = Math.min(backlog.length, capacity);
+      for (let i = 0; i < drawn; i++) {
+        const cx = INBOX_X0 + 12 + (i % cols) * stepX;
+        const cyy = y1 - 36 - Math.floor(i / cols) * stepY;
+        ctx.beginPath();
+        ctx.arc(cx, cyy, dot, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139,151,171,0.75)';
+        ctx.fill();
+      }
+      if (backlog.length > capacity) {
+        const label = '+' + (backlog.length - capacity) + ' more';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        const w = ctx.measureText(label).width + 14;
+        ctx.beginPath();
+        ctx.roundRect(mid - w / 2, y0 + 3, w, 19, 9);
+        ctx.fillStyle = '#262f41';
+        ctx.fill();
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(label, mid, y0 + 17);
+      }
+
+      ctx.fillStyle = backlog.length > capacity ? '#ef4444' : '#8b97ab';
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillText(backlog.length + ' unstarted', mid, y1 - 10);
+      ctx.fillStyle = 'rgba(139,151,171,0.75)';
+      ctx.font = '11px monospace';
+      ctx.fillText('asking ' + ARRIVAL.toFixed(1) + '/s', mid, H - 10);
+
+      // Feed into the line
+      ctx.beginPath();
+      ctx.moveTo(INBOX_X1 + 2, cy);
+      ctx.lineTo(PIPE_X0 - 2, cy);
+      ctx.moveTo(PIPE_X0 - 7, cy - 4);
+      ctx.lineTo(PIPE_X0 - 2, cy);
+      ctx.lineTo(PIPE_X0 - 7, cy + 4);
+      ctx.strokeStyle = 'rgba(139,151,171,0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const constraint = constraintStage();
+
+      drawInbox();
+
+      // Pipe body
+      ctx.beginPath();
+      for (let x = PIPE_X0; x <= W; x += 4) ctx.lineTo(x, cy - radiusAt(x));
+      for (let x = W; x >= PIPE_X0; x -= 4) ctx.lineTo(x, cy + radiusAt(x));
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, W, 0);
+      grad.addColorStop(0, 'rgba(125,211,252,0.13)');
+      grad.addColorStop(1, 'rgba(167,139,250,0.13)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(139,151,171,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Constraint band
+      ctx.save();
+      ctx.beginPath();
+      for (let x = constraint.x0; x <= constraint.x1; x += 4) ctx.lineTo(x, cy - radiusAt(x));
+      for (let x = constraint.x1; x >= constraint.x0; x -= 4) ctx.lineTo(x, cy + radiusAt(x));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(239,68,68,0.16)';
+      ctx.fill();
+      ctx.restore();
+
+      const constraintMid = (constraint.x0 + constraint.x1) / 2;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillText('THE CONSTRAINT', constraintMid, 14);
+      ctx.beginPath();
+      ctx.moveTo(constraintMid, 20);
+      ctx.lineTo(constraintMid, cy - radiusAt(constraintMid) - 14);
+      ctx.strokeStyle = 'rgba(239,68,68,0.55)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Work items
+      balls.forEach(b => {
+        const isWaiting = b.x < constraint.x0;
+        ctx.fillStyle = isWaiting ? '#ef4444' : (b.x > constraint.x1 ? '#34d399' : '#fbbf24');
+        ctx.beginPath();
+        ctx.arc(b.x, cy, BALL_R, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Stage labels with live capacity and idle time
+      stages.forEach(s => {
+        const mid = (s.x0 + s.x1) / 2;
+        const isConstraint = s === constraint;
+        const changed = Math.abs(s.capacity - s.baseCapacity) > 0.01;
+        ctx.fillStyle = isConstraint ? '#ef4444' : (changed ? '#7dd3fc' : '#8b97ab');
+        ctx.font = (isConstraint || changed) ? 'bold 13px Inter, sans-serif' : '13px Inter, sans-serif';
+        const factor = s.capacity / s.baseCapacity;
+        ctx.fillText(s.label + (changed ? '  ' + factor.toFixed(1) + '\u00d7' : ''), mid, H - 26);
+        ctx.fillStyle = isConstraint ? 'rgba(239,68,68,0.85)' : 'rgba(139,151,171,0.75)';
+        ctx.font = '11px monospace';
+        ctx.fillText('capacity ' + capacityOf(s).toFixed(1) + '/s', mid, H - 10);
+
+        // Flow is conserved, so every stage processes exactly the constraint's
+        // rate. Anything faster than the constraint simply idles the difference
+        // away -- speeding up a non-constraint buys idle time, not throughput.
+        // Upstream that idleness is blocking (work ready, nowhere to put it);
+        // downstream it is starving (capacity free, nothing has arrived).
+        const top = cy - radiusAt(mid) - 10;
+        const idleFraction = 1 - capacityOf(constraint) / capacityOf(s);
+        ctx.font = 'bold 12px Inter, sans-serif';
+        if (isConstraint) {
+          ctx.fillStyle = '#ef4444';
+          ctx.fillText('100% busy', mid, top);
+        } else {
+          const word = s.x1 <= constraint.x0 ? '% blocked' : '% starved';
+          ctx.fillStyle = idleFraction > 0.5 ? 'rgba(251,191,36,0.95)' : 'rgba(139,151,171,0.85)';
+          ctx.fillText(Math.round(idleFraction * 100) + word, mid, top);
+        }
+
+      });
+    }
+
+    function setVerdict(html) {
+      const el = document.getElementById('tocVerdict');
+      if (el) el.innerHTML = html;
+    }
+
+    function flashThroughput() {
+      /** @type {HTMLElement | null} */
+      const box = document.querySelector('.readout-box.good');
+      if (!box) return;
+      box.classList.remove('flash');
+      void box.offsetWidth;
+      box.classList.add('flash');
+    }
+
+    function syncSliders() {
+      const constraint = constraintStage();
+      document.querySelectorAll('.cap-slider').forEach(el => {
+        /** @type {HTMLInputElement | null} */
+        const input = el.querySelector('input[type=range]');
+        if (!input) return;
+        const stage = stages.find(st => st.label === input.dataset.stage);
+        if (!stage) return;
+        input.value = stage.capacity;
+        el.querySelector('.cs-value').textContent = stage.capacity.toFixed(1) + '/s';
+        el.classList.toggle('is-constraint', stage === constraint);
+      });
+    }
+
+    /** @type {NodeListOf<HTMLInputElement>} */
+    const sliderInputs = document.querySelectorAll('.cap-slider input[type=range]');
+    sliderInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        const stage = stages.find(st => st.label === input.dataset.stage);
+        if (!stage) return;
+
+        const before = capacityOf(constraintStage());
+        stage.capacity = parseFloat(input.value);
+        const after = capacityOf(constraintStage());
+        const newConstraint = constraintStage();
+
+        // Jump straight to the new steady state so the readout answers at once,
+        // and re-seed the averages so they show the new rate rather than drifting.
+        warmUp(20);
+        throughputEma = null;
+        leadTimeEma = null;
+
+        const moved = Math.abs(after - before) > 0.01;
+        if (moved) flashThroughput();
+        setVerdict(moved
+          ? '<b>' + stage.label + '</b> is the constraint \u2014 throughput <span class="yes">moved</span> from ~' +
+            Math.round(before * 60) + '/min to ~' + Math.round(after * 60) + '/min. ' +
+            'Lead time drops with it. The constraint is <b>' + newConstraint.label + '</b> now \u2014 fix one and it relocates.'
+          : '<b>' + stage.label + '</b> is now ' + stage.capacity.toFixed(1) + '/s and the pipe is visibly wider \u2014 ' +
+            'throughput is <span class="no">completely unchanged</span> at ~' + Math.round(after * 60) + '/min. ' +
+            '<b>' + newConstraint.label + '</b> still sets the pace \u2014 so all that extra capacity turns straight into <b>idle time</b>.');
+        syncSliders();
+      });
+    });
+
+    document.querySelectorAll('.toc-btn[data-reset]').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); reset(); });
+    });
+
+    let running = false;
+    window.startBottleneckAnimation = function () {
+      if (running) return;
+      running = true;
+      reset();
+      rafId = requestAnimationFrame(step);
+    };
+    window.stopBottleneckAnimation = function () {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  })();
+
+  const bottleneckSlideIndex = Array.from(slides).findIndex(s => s.id === 'bottleneckSlide');
+  const originalRender = render;
+  render = function () {
+    originalRender();
+    if (i === bottleneckSlideIndex) {
+      window.startBottleneckAnimation && window.startBottleneckAnimation();
+    } else {
+      window.stopBottleneckAnimation && window.stopBottleneckAnimation();
+    }
+  };
+</script>
+</body>
+</html>
